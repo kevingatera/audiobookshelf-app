@@ -4,6 +4,28 @@
       <ui-text-input ref="input" v-model="search" @input="updateSearch" borderless :placeholder="$strings.ButtonSearch" bg="white bg-opacity-10" rounded="md" prepend-icon="search" text-size="base" clearable class="w-full text-lg" />
     </div>
     <div class="w-full overflow-x-hidden overflow-y-auto search-content px-4" @click.stop>
+      <div v-if="isBookLibrary && requestCapabilities.enabled" class="mb-4 rounded-md border border-white/10 bg-black/20 p-3">
+        <div class="flex items-center justify-between">
+          <p class="font-semibold text-sm">{{ $strings.HeaderBookRequests }}</p>
+          <p v-if="requestLoading" class="text-xs text-fg-muted">{{ $strings.MessageFetching }}</p>
+        </div>
+        <p class="text-xs text-fg-muted">{{ $strings.MessageBookRequestSearchHelp }}</p>
+        <div v-if="requestResults.length" class="mt-2 space-y-2">
+          <div v-for="result in requestResults" :key="result.foreignBookId" class="rounded border border-white/10 p-2">
+            <div class="flex items-center justify-between gap-2">
+              <div>
+                <p class="text-sm font-semibold">{{ result.title }}</p>
+                <p class="text-xs text-fg-muted">{{ result.author }}</p>
+                <p v-if="result.status === 'in_library'" class="text-xs text-warning">{{ $strings.LabelAlreadyInLibrary }}</p>
+              </div>
+              <ui-btn small :disabled="requestSubmitting[result.foreignBookId] || result.status === 'in_library'" :loading="requestSubmitting[result.foreignBookId]" @click="submitRequest(result)">
+                {{ $strings.ButtonRequestBook }}
+              </ui-btn>
+            </div>
+            <p v-if="result.localMatches?.length" class="mt-1 text-xs text-fg-muted">{{ $getString('MessageBookRequestMatchedItem', [result.localMatches[0].localItem.title]) }}</p>
+          </div>
+        </div>
+      </div>
       <div v-show="isFetching" class="w-full py-8 flex justify-center">
         <p class="text-lg text-fg-muted">{{ $strings.MessageFetching }}</p>
       </div>
@@ -81,6 +103,11 @@ export default {
       authorResults: [],
       narratorResults: [],
       tagResults: []
+      ,
+      requestCapabilities: { enabled: false },
+      requestResults: [],
+      requestLoading: false,
+      requestSubmitting: {}
     }
   },
   computed: {
@@ -92,9 +119,19 @@ export default {
     },
     totalResults() {
       return this.bookResults.length + this.seriesResults.length + this.authorResults.length + this.podcastResults.length + this.narratorResults.length + this.tagResults.length
+    },
+    isBookLibrary() {
+      return this.$store.getters['libraries/getCurrentLibraryMediaType'] === 'book'
     }
   },
   methods: {
+    async fetchRequestCapabilities() {
+      if (!this.isBookLibrary) {
+        this.requestCapabilities = { enabled: false }
+        return
+      }
+      this.requestCapabilities = await this.$nativeHttp.get(`/api/libraries/${this.currentLibraryId}/book-requests/capabilities`).catch(() => ({ enabled: false }))
+    },
     async runSearch(value) {
       if (this.isFetching && this.lastSearch === value) return
 
@@ -129,6 +166,44 @@ export default {
       this.authorResults = results?.authors || []
       this.narratorResults = results?.narrators || []
       this.tagResults = results?.tags || []
+
+      if (this.requestCapabilities.enabled) {
+        this.requestLoading = true
+        const requestResponse = await this.$nativeHttp.get(`/api/libraries/${this.currentLibraryId}/book-requests/search?q=${encodeURIComponent(value)}&limit=8`).catch((error) => {
+          console.error('Book request search error', error)
+          return null
+        })
+        this.requestResults = requestResponse?.remote || []
+        this.requestLoading = false
+      }
+    },
+    async submitRequest(result) {
+      this.$set(this.requestSubmitting, result.foreignBookId, true)
+      const response = await this.$nativeHttp
+        .post(`/api/libraries/${this.currentLibraryId}/book-requests`, {
+          foreignBookId: result.foreignBookId,
+          searchForNewBook: true,
+          remoteBook: result.remoteBook
+        })
+        .catch((error) => {
+          if (error?.status === 409) {
+            const code = error.data?.code
+            if (code === 'ALREADY_IN_LIBRARY') {
+              this.$toast.info(this.$strings.LabelAlreadyInLibrary)
+            } else if (code === 'ALREADY_TRACKED_IN_READARR') {
+              this.$toast.info(this.$strings.MessageBookAlreadyTracked)
+            } else {
+              this.$toast.error(this.$strings.ToastFailedToUpdate)
+            }
+          } else {
+            this.$toast.error(this.$strings.ToastFailedToUpdate)
+          }
+          return null
+        })
+      this.$set(this.requestSubmitting, result.foreignBookId, false)
+      if (response?.ok) {
+        this.$toast.success(this.$strings.ToastBookRequestSubmitted)
+      }
     },
     updateSearch(val) {
       clearTimeout(this.searchTimeout)
@@ -145,6 +220,7 @@ export default {
     }
   },
   mounted() {
+    this.fetchRequestCapabilities()
     if (this.$store.state.globals.lastSearch) {
       this.search = this.$store.state.globals.lastSearch
       this.runSearch(this.search)
