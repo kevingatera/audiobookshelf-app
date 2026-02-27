@@ -102,11 +102,6 @@ export default {
     },
     async attemptConnection() {
       console.warn('[default] attemptConnection')
-      if (!this.networkConnected) {
-        console.warn('[default] No network connection')
-        AbsLogger.info({ tag: 'default', message: 'attemptConnection: No network connection' })
-        return
-      }
       if (this.attemptingConnection) {
         return
       }
@@ -126,6 +121,18 @@ export default {
         // No last server config set
         this.attemptingConnection = false
         AbsLogger.info({ tag: 'default', message: 'attemptConnection: No last server config set' })
+
+        // First-run/no-config UX: go straight to connect screen
+        if (this.$route.path !== '/connect') {
+          this.$router.replace('/connect')
+        }
+        return
+      }
+
+      if (!this.networkConnected) {
+        this.attemptingConnection = false
+        console.warn('[default] No network connection')
+        AbsLogger.info({ tag: 'default', message: 'attemptConnection: No network connection' })
         return
       }
 
