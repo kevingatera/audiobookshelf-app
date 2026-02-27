@@ -4,26 +4,55 @@
       <ui-text-input ref="input" v-model="search" @input="updateSearch" borderless :placeholder="$strings.ButtonSearch" bg="white bg-opacity-10" rounded="md" prepend-icon="search" text-size="base" clearable class="w-full text-lg" />
     </div>
     <div class="w-full overflow-x-hidden overflow-y-auto search-content px-4" @click.stop>
-      <div v-if="isBookLibrary && requestCapabilities.enabled" class="mb-4 rounded-md border border-white/10 bg-black/20 p-3">
-        <div class="flex items-center justify-between">
-          <p class="font-semibold text-sm">{{ $strings.HeaderBookRequests }}</p>
-          <p v-if="requestLoading" class="text-xs text-fg-muted">{{ $strings.MessageFetching }}</p>
-        </div>
-        <p class="text-xs text-fg-muted">{{ $strings.MessageBookRequestSearchHelp }}</p>
-        <div v-if="requestResults.length" class="mt-2 space-y-2">
-          <div v-for="result in requestResults" :key="result.foreignBookId" class="rounded border border-white/10 p-2">
-            <div class="flex items-center justify-between gap-2">
-              <div>
-                <p class="text-sm font-semibold">{{ result.title }}</p>
-                <p class="text-xs text-fg-muted">{{ result.author }}</p>
-                <p v-if="result.status === 'in_library'" class="text-xs text-warning">{{ $strings.LabelAlreadyInLibrary }}</p>
-              </div>
-              <ui-btn small :disabled="requestSubmitting[result.foreignBookId] || result.status === 'in_library'" :loading="requestSubmitting[result.foreignBookId]" @click="submitRequest(result)">
-                {{ $strings.ButtonRequestBook }}
-              </ui-btn>
-            </div>
-            <p v-if="result.localMatches?.length" class="mt-1 text-xs text-fg-muted">{{ $getString('MessageBookRequestMatchedItem', [result.localMatches[0].localItem.title]) }}</p>
+      <div v-if="isBookLibrary && requestCapabilities.enabled" class="request-panel mb-4 overflow-hidden rounded-xl border border-white/10">
+        <div class="request-panel-head flex items-center justify-between px-3 py-2.5">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols text-base text-sky-200">library_add</span>
+            <p class="font-semibold text-sm tracking-wide">{{ $strings.HeaderBookRequests }}</p>
           </div>
+          <div class="flex items-center gap-2">
+            <p v-if="requestLoading" class="text-xs text-fg-muted">{{ $strings.MessageFetching }}</p>
+            <span v-if="requestResults.length" class="rounded-full border border-white/20 px-2 py-0.5 text-xxs text-fg-muted">
+              {{ requestResults.length }}
+            </span>
+          </div>
+        </div>
+        <div class="px-3 pb-3">
+          <p class="text-xs text-fg-muted">{{ $strings.MessageBookRequestSearchHelp }}</p>
+          <div v-if="requestResults.length" class="mt-2 space-y-2">
+            <div v-for="result in requestResults" :key="result.foreignBookId" class="request-card rounded-lg border border-white/10 p-2.5">
+              <div class="flex items-start gap-2.5">
+                <img v-if="result.remoteCover" :src="result.remoteCover" class="h-14 w-10 rounded object-cover object-center border border-white/10" />
+                <div v-else class="h-14 w-10 rounded border border-white/10 bg-white/5 flex items-center justify-center text-xxs text-fg-muted">N/A</div>
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-sm font-semibold">{{ result.title }}</p>
+                  <p class="truncate text-xs text-fg-muted">{{ result.author }}</p>
+                  <div class="mt-1 flex flex-wrap items-center gap-1.5">
+                    <span class="rounded-full border border-white/20 px-1.5 py-0.5 text-xxs text-fg-muted">Readarr</span>
+                    <span
+                      v-if="result.status === 'in_library'"
+                      class="rounded-full border border-warning/40 bg-warning/10 px-1.5 py-0.5 text-xxs text-warning"
+                    >
+                      {{ $strings.LabelAlreadyInLibrary }}
+                    </span>
+                  </div>
+                </div>
+                <ui-btn
+                  small
+                  color="success"
+                  :disabled="requestSubmitting[result.foreignBookId] || result.status === 'in_library'"
+                  :loading="requestSubmitting[result.foreignBookId]"
+                  @click="submitRequest(result)"
+                >
+                  {{ $strings.ButtonRequestBook }}
+                </ui-btn>
+              </div>
+              <p v-if="result.localMatches?.length" class="mt-2 rounded border border-white/10 bg-white/5 px-2 py-1 text-xxs text-fg-muted">
+                {{ $getString('MessageBookRequestMatchedItem', [result.localMatches[0].localItem.title]) }}
+              </p>
+            </div>
+          </div>
+          <p v-else-if="lastSearch && !requestLoading" class="mt-2 text-xs text-fg-muted">{{ $strings.MessageNoItemsFound }}</p>
         </div>
       </div>
       <div v-show="isFetching" class="w-full py-8 flex justify-center">
@@ -235,5 +264,18 @@ export default {
 .search-content {
   height: calc(100% - 108px);
   max-height: calc(100% - 108px);
+}
+
+.request-panel {
+  background: linear-gradient(160deg, rgba(20, 26, 39, 0.95), rgba(15, 24, 32, 0.92) 52%, rgba(27, 33, 47, 0.95));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.request-panel-head {
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0.22), rgba(14, 165, 233, 0.08));
+}
+
+.request-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.02));
 }
 </style>
