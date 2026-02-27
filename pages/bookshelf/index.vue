@@ -45,6 +45,7 @@ export default {
       shelves: [],
       categoriesFetchToken: 0,
       initialShelvesRenderCount: 2,
+      initialServerShelfLimit: 4,
       rssHydrationTimer: null,
       rssHydrationInFlight: false,
       lastRssHydrationAt: 0,
@@ -374,12 +375,35 @@ export default {
       this.isLoading = true
       const fetchToken = ++this.categoriesFetchToken
 
+      const tryLocalFallbackShelves = async () => {
+        await new Promise((resolve) => setTimeout(resolve, 1200))
+        if (fetchToken !== this.categoriesFetchToken) return
+        if (!this.isLoading || this.shelves.length) return
+
+        this.localLibraryItems = await this.$db.getLocalLibraryItems().catch(() => [])
+        if (fetchToken !== this.categoriesFetchToken) return
+
+        const localCategories = this.getLocalMediaItemCategories()
+        if (!localCategories.length) return
+
+        this.shelves = localCategories
+        this.lastLocalFetch = Date.now()
+        this.isLoading = false
+        this.scheduleVisibleRssHydration()
+      }
+
       if (isConnectedToServerWithInternet) {
+        tryLocalFallbackShelves()
+
         const serverStartedAt = Date.now()
-        const categories = await this.$nativeHttp.get(`/api/libraries/${this.currentLibraryId}/personalized?minified=1&include=numEpisodesIncomplete`, { connectTimeout: 10000 }).catch((error) => {
-          console.error('[categories] Failed to fetch categories', error)
-          return []
-        })
+        const categories = await this.$nativeHttp
+          .get(`/api/libraries/${this.currentLibraryId}/personalized?minified=1&include=numEpisodesIncomplete&limit=${this.initialServerShelfLimit}`, {
+            connectTimeout: 7000
+          })
+          .catch((error) => {
+            console.error('[categories] Failed to fetch categories', error)
+            return []
+          })
 
         if (fetchToken !== this.categoriesFetchToken) {
           return

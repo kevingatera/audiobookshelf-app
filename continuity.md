@@ -19,6 +19,10 @@ Last updated: 2026-02-28
 - **`include=rssfeed` in home personalized request** increased cold latency.
   - Home first request now excludes RSS feed data for speed.
   - Hybrid follow-up added: background request hydrates RSS metadata for visible top shelves.
+- **Cold-path spikes still occurred** on first home load in some sessions.
+  - Added a small first-render server limit for home (`limit=4`) to reduce initial payload work.
+  - Added a simple local fallback timer (~1.2s): if server shelves are still pending and local items exist, render local shelves immediately.
+  - Kept behavior backward-compatible: this only changes optional query params and client-side fallback order.
 - **i18n workflow failures** were caused by key ordering comparator mismatch.
   - The GitHub action checks simple lexical order (`keys[i] < keys[i-1]`), not locale-aware sort.
   - Added `scripts/sort-i18n.js` and `npm run i18n:sort` to apply CI-compatible ordering.
