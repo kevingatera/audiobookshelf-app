@@ -33,6 +33,9 @@ Last updated: 2026-02-28 (late)
 - Similar bottleneck existed when navigating to item pages that switch libraries.
   - Item-page `setLibrary()` now does lightweight library fetch first and defers filterdata fetch in background.
   - This reduces perceived lag when opening books across libraries.
+- First-run UX improvement:
+  - When no saved server config exists, app now auto-redirects to `/connect` instead of leaving user on empty `/bookshelf` with only a connect button.
+  - Implemented in `layouts/default.vue` (`attemptConnection`) and kept non-invasive for existing connected users.
 - Latest live observations (post-tuning):
   - Fast first-paint subset (`shelves=recently-added,recent-series`) is consistently sub-1s (commonly ~0.01s to ~0.10s server-side).
 - Remaining spikes happen on full follow-up personalized calls (`include=numEpisodesIncomplete` and `include=rssfeed`) when cache is invalidated.
