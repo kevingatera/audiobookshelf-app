@@ -23,6 +23,10 @@ Last updated: 2026-02-28
   - Added a small first-render server limit for home (`limit=4`) to reduce initial payload work.
   - Added a simple local fallback timer (~1.2s): if server shelves are still pending and local items exist, render local shelves immediately.
   - Kept behavior backward-compatible: this only changes optional query params and client-side fallback order.
+- Added a two-phase home fetch for first paint:
+  - quick request for a small shelf subset (`shelves=continue-listening,recent-series`)
+  - followed by full personalized request to restore complete shelf set
+  - endpoint parameter is additive and optional for compatibility.
 - **i18n workflow failures** were caused by key ordering comparator mismatch.
   - The GitHub action checks simple lexical order (`keys[i] < keys[i-1]`), not locale-aware sort.
   - Added `scripts/sort-i18n.js` and `npm run i18n:sort` to apply CI-compatible ordering.
