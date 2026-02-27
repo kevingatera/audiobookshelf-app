@@ -45,6 +45,10 @@ export default {
       shelves: [],
       categoriesFetchToken: 0,
       initialShelvesRenderCount: 2,
+      rssHydrationTimer: null,
+      rssHydrationInFlight: false,
+      lastRssHydrationAt: 0,
+      lastRssHydrationLibraryId: null,
       isFirstNetworkConnection: true,
       lastServerFetch: 0,
       lastServerFetchLibraryId: null,
@@ -132,6 +136,7 @@ export default {
         if (!parsed?.shelves || !Array.isArray(parsed.shelves) || !parsed.shelves.length) return false
 
         this.shelves = parsed.shelves
+        this.scheduleVisibleRssHydration()
         return true
       } catch (error) {
         console.error('[categories] Failed to load shelves cache', error)
@@ -158,13 +163,65 @@ export default {
 
       if (shelves.length <= this.initialShelvesRenderCount) {
         this.shelves = shelves
+        this.scheduleVisibleRssHydration()
         return
       }
 
       this.shelves = shelves.slice(0, this.initialShelvesRenderCount)
+      this.scheduleVisibleRssHydration()
       requestAnimationFrame(() => {
         this.shelves = shelves
+        this.scheduleVisibleRssHydration()
       })
+    },
+    scheduleVisibleRssHydration() {
+      if (!this.user || !this.networkConnected) return
+      if (this.rssHydrationTimer) {
+        clearTimeout(this.rssHydrationTimer)
+      }
+      this.rssHydrationTimer = setTimeout(() => {
+        this.hydrateVisibleShelvesRssFeedSimple()
+      }, 250)
+    },
+    async hydrateVisibleShelvesRssFeedSimple() {
+      if (!this.user || !this.networkConnected || this.rssHydrationInFlight || !this.currentLibraryId) return
+
+      if (this.lastRssHydrationLibraryId === this.currentLibraryId && Date.now() - this.lastRssHydrationAt < 30000) {
+        return
+      }
+
+      this.rssHydrationInFlight = true
+      const payload = await this.$nativeHttp
+        .get(`/api/libraries/${this.currentLibraryId}/personalized?minified=1&include=rssfeed&limit=8`, { connectTimeout: 6000 })
+        .catch(() => null)
+
+      if (payload && Array.isArray(payload)) {
+        const rssById = new Map()
+        payload.slice(0, this.initialShelvesRenderCount).forEach((shelf) => {
+          if (!Array.isArray(shelf?.entities)) return
+          shelf.entities.forEach((entity) => {
+            if (entity?.id && entity.rssFeed !== undefined) {
+              rssById.set(String(entity.id), entity.rssFeed)
+            }
+          })
+        })
+
+        if (rssById.size) {
+          this.shelves.slice(0, this.initialShelvesRenderCount).forEach((shelf) => {
+            if (!Array.isArray(shelf?.entities)) return
+            shelf.entities.forEach((entity) => {
+              const rssFeed = rssById.get(String(entity?.id || ''))
+              if (rssFeed === undefined) return
+              if (entity.rssFeed === rssFeed) return
+              this.$set(entity, 'rssFeed', rssFeed)
+            })
+          })
+        }
+      }
+
+      this.lastRssHydrationAt = Date.now()
+      this.lastRssHydrationLibraryId = this.currentLibraryId
+      this.rssHydrationInFlight = false
     },
     enrichShelvesWithLocalItems(shelves, localLibraryItems) {
       if (!Array.isArray(shelves) || !shelves.length || !Array.isArray(localLibraryItems) || !localLibraryItems.length) {
@@ -337,6 +394,7 @@ export default {
           }
           const localCategories = this.getLocalMediaItemCategories()
           this.shelves = localCategories
+          this.scheduleVisibleRssHydration()
           this.lastServerFetch = 0
           this.lastLocalFetch = Date.now()
           this.isLoading = false
@@ -358,6 +416,7 @@ export default {
         const enrichedShelves = this.enrichShelvesWithLocalItems(this.shelves, this.localLibraryItems)
         const finalShelves = [...enrichedShelves, ...localShelves]
         this.shelves = finalShelves
+        this.scheduleVisibleRssHydration()
         this.saveShelvesCache(finalShelves)
 
         console.log(`[categories] Server shelves ready in ${Date.now() - serverStartedAt}ms, local enrichment in ${Date.now() - localStartedAt}ms`)
@@ -372,6 +431,7 @@ export default {
         return
       }
       this.shelves = localCategories
+      this.scheduleVisibleRssHydration()
       this.saveShelvesCache(localCategories)
       console.log('[categories] Local shelves set', this.shelves.length, this.lastLocalFetch)
 
@@ -379,6 +439,8 @@ export default {
     },
     libraryChanged() {
       if (this.currentLibraryId) {
+        this.lastRssHydrationAt = 0
+        this.lastRssHydrationLibraryId = null
         console.log(`[categories] libraryChanged so fetching categories`)
         this.fetchCategories()
       }
@@ -446,6 +508,10 @@ export default {
     })
   },
   beforeDestroy() {
+    if (this.rssHydrationTimer) {
+      clearTimeout(this.rssHydrationTimer)
+      this.rssHydrationTimer = null
+    }
     this.removeListeners()
   }
 }
