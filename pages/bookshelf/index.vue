@@ -44,6 +44,7 @@ export default {
     return {
       shelves: [],
       categoriesFetchToken: 0,
+      initialShelvesRenderCount: 2,
       isFirstNetworkConnection: true,
       lastServerFetch: 0,
       lastServerFetchLibraryId: null,
@@ -116,6 +117,55 @@ export default {
     }
   },
   methods: {
+    getShelfCacheKey() {
+      const serverHost = this.$store.getters['user/getServerAddress'] || 'unknown-server'
+      const userId = this.user?.id || 'anon'
+      const libraryId = this.currentLibraryId || 'no-library'
+      return `abs_mobile_home_shelves_v1:${serverHost}:${userId}:${libraryId}`
+    },
+    loadShelvesCache() {
+      try {
+        const payload = localStorage.getItem(this.getShelfCacheKey())
+        if (!payload) return false
+
+        const parsed = JSON.parse(payload)
+        if (!parsed?.shelves || !Array.isArray(parsed.shelves) || !parsed.shelves.length) return false
+
+        this.shelves = parsed.shelves
+        return true
+      } catch (error) {
+        console.error('[categories] Failed to load shelves cache', error)
+        return false
+      }
+    },
+    saveShelvesCache(shelves) {
+      try {
+        if (!Array.isArray(shelves) || !shelves.length) return
+        const payload = {
+          savedAt: Date.now(),
+          shelves
+        }
+        localStorage.setItem(this.getShelfCacheKey(), JSON.stringify(payload))
+      } catch (error) {
+        console.error('[categories] Failed to save shelves cache', error)
+      }
+    },
+    applyShelvesProgressive(shelves) {
+      if (!Array.isArray(shelves) || !shelves.length) {
+        this.shelves = []
+        return
+      }
+
+      if (shelves.length <= this.initialShelvesRenderCount) {
+        this.shelves = shelves
+        return
+      }
+
+      this.shelves = shelves.slice(0, this.initialShelvesRenderCount)
+      requestAnimationFrame(() => {
+        this.shelves = shelves
+      })
+    },
     enrichShelvesWithLocalItems(shelves, localLibraryItems) {
       if (!Array.isArray(shelves) || !shelves.length || !Array.isArray(localLibraryItems) || !localLibraryItems.length) {
         return shelves
@@ -294,7 +344,7 @@ export default {
           return
         }
 
-        this.shelves = categories
+        this.applyShelvesProgressive(categories)
         this.isLoading = false
 
         const localStartedAt = Date.now()
@@ -306,7 +356,9 @@ export default {
         const localShelves = localCategories.filter((cat) => cat.type === this.currentLibraryMediaType && !cat.localOnly)
 
         const enrichedShelves = this.enrichShelvesWithLocalItems(this.shelves, this.localLibraryItems)
-        this.shelves = [...enrichedShelves, ...localShelves]
+        const finalShelves = [...enrichedShelves, ...localShelves]
+        this.shelves = finalShelves
+        this.saveShelvesCache(finalShelves)
 
         console.log(`[categories] Server shelves ready in ${Date.now() - serverStartedAt}ms, local enrichment in ${Date.now() - localStartedAt}ms`)
         console.log('[categories] Server shelves set', this.shelves.length, this.lastServerFetch)
@@ -320,6 +372,7 @@ export default {
         return
       }
       this.shelves = localCategories
+      this.saveShelvesCache(localCategories)
       console.log('[categories] Local shelves set', this.shelves.length, this.lastLocalFetch)
 
       this.isLoading = false
@@ -383,6 +436,7 @@ export default {
     }
 
     this.initListeners()
+    this.loadShelvesCache()
     console.log(`[categories] mounted so fetching categories`)
     this.fetchCategories()
     this.$store.dispatch('globals/loadLocalMediaProgress').then(() => {
