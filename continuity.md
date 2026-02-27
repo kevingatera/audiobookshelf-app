@@ -1,6 +1,6 @@
 # Continuity Notes
 
-Last updated: 2026-02-28
+Last updated: 2026-02-28 (late)
 
 ## Current branch status
 
@@ -30,6 +30,19 @@ Last updated: 2026-02-28
 - Found another startup bottleneck: `libraries/fetch` awaited `?include=filterdata`, which can take several seconds and compete with home requests.
   - `initLibraries` now fetches base library first (`includeFilterData: false`) and emits `library-changed` immediately.
   - Filter data is fetched in a delayed background call (`fetchFilterData`) to reduce first-screen blocking.
+- Similar bottleneck existed when navigating to item pages that switch libraries.
+  - Item-page `setLibrary()` now does lightweight library fetch first and defers filterdata fetch in background.
+  - This reduces perceived lag when opening books across libraries.
+- Latest live observations (post-tuning):
+  - Fast first-paint subset (`shelves=recently-added,recent-series`) is consistently sub-1s (commonly ~0.01s to ~0.10s server-side).
+- Remaining spikes happen on full follow-up personalized calls (`include=numEpisodesIncomplete` and `include=rssfeed`) when cache is invalidated.
+- Remaining spikes correlate with cache invalidation during playback/progress updates on server side.
+  - Typical spike signature in logs: `Loaded 7 personalized shelves in ~3.8s` with `Discover` around `~2.7s to ~3.5s`.
+  - Cache invalidation just before spikes is commonly triggered by playback/progress events (`mediaProgress.afterUpdate`, `playbackSession.afterBulkUpdate`, `Array.afterUpsert`).
+- Stats/book-open spot checks are currently not primary bottlenecks:
+  - `/api/me/stats/year/:year` around ~0.83s in sampled run.
+  - `/api/items/:id?expanded=1&include=rssfeed` around ~0.06s.
+  - `/api/items/:id/play` around ~0.11s.
 - **i18n workflow failures** were caused by key ordering comparator mismatch.
   - The GitHub action checks simple lexical order (`keys[i] < keys[i-1]`), not locale-aware sort.
   - Added `scripts/sort-i18n.js` and `npm run i18n:sort` to apply CI-compatible ordering.
@@ -41,6 +54,9 @@ Last updated: 2026-02-28
 - `Verify all i18n files are alphabetized` uses `audiobookshelf/audiobookshelf-i18n-updater@v1.3.0`.
 - For translation edits, run `npm run i18n:sort` before pushing.
 - `Publish Test App` requires repository Pages to stay enabled.
+- Latest release published manually after CI:
+  - `homelab-book-requests-debug-20260228-r4`
+  - APK: `audiobookshelf-20260228-034439-a893a94.apk`
 
 ## Follow-up suggestions for future PR to upstream
 

@@ -736,7 +736,17 @@ export default {
     },
     async setLibrary() {
       if (!this.libraryItem.libraryId) return
-      await this.$store.dispatch('libraries/fetch', this.libraryItem.libraryId)
+      await this.$store.dispatch('libraries/fetch', {
+        libraryId: this.libraryItem.libraryId,
+        includeFilterData: false
+      })
+
+      const targetLibraryId = this.libraryItem.libraryId
+      setTimeout(() => {
+        if (!this.user || this.$store.state.libraries.currentLibraryId !== targetLibraryId) return
+        this.$store.dispatch('libraries/fetchFilterData', targetLibraryId)
+      }, 1500)
+
       this.$localStore.setLastLibraryId(this.libraryItem.libraryId)
     },
     init() {
