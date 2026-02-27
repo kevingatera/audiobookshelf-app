@@ -399,7 +399,7 @@ export default {
         if (shouldRunQuickFetch) {
           const quickCategories = await this.$nativeHttp
             .get(
-              `/api/libraries/${this.currentLibraryId}/personalized?minified=1&include=numEpisodesIncomplete&limit=${this.initialServerShelfLimit}&shelves=continue-listening,recent-series`,
+              `/api/libraries/${this.currentLibraryId}/personalized?minified=1&include=numEpisodesIncomplete&limit=${this.initialServerShelfLimit}&shelves=recently-added,recent-series`,
               { connectTimeout: 4000 }
             )
             .catch(() => [])
