@@ -395,6 +395,25 @@ export default {
       if (isConnectedToServerWithInternet) {
         tryLocalFallbackShelves()
 
+        const shouldRunQuickFetch = !this.shelves.length
+        if (shouldRunQuickFetch) {
+          const quickCategories = await this.$nativeHttp
+            .get(
+              `/api/libraries/${this.currentLibraryId}/personalized?minified=1&include=numEpisodesIncomplete&limit=${this.initialServerShelfLimit}&shelves=continue-listening,recent-series`,
+              { connectTimeout: 4000 }
+            )
+            .catch(() => [])
+
+          if (fetchToken !== this.categoriesFetchToken) {
+            return
+          }
+
+          if (quickCategories.length) {
+            this.applyShelvesProgressive(quickCategories)
+            this.isLoading = false
+          }
+        }
+
         const serverStartedAt = Date.now()
         const categories = await this.$nativeHttp
           .get(`/api/libraries/${this.currentLibraryId}/personalized?minified=1&include=numEpisodesIncomplete&limit=${this.initialServerShelfLimit}`, {
