@@ -22,6 +22,7 @@ export default {
   data() {
     return {
       inittingLibraries: false,
+      loadingLocalProgress: false,
       hasMounted: false,
       disconnectTime: 0,
       timeLostFocus: 0,
@@ -225,6 +226,15 @@ export default {
         await this.$store.dispatch('globals/loadLocalMediaProgress')
       }
     },
+    async refreshLocalMediaProgress(reason = 'manual') {
+      if (this.loadingLocalProgress) return
+      this.loadingLocalProgress = true
+      AbsLogger.info({ tag: 'default', message: `refreshLocalMediaProgress: start (${reason})` })
+      await this.$store.dispatch('globals/loadLocalMediaProgress').catch((error) => {
+        console.error('[default] Failed to refresh local media progress', error)
+      })
+      this.loadingLocalProgress = false
+    },
     userUpdated(user) {
       if (this.user?.id == user.id) {
         this.$store.commit('user/setUser', user)
@@ -302,8 +312,9 @@ export default {
         // If device out of focus for more than 30s then reload local media progress
         if (elapsedTimeOutOfFocus > 30000) {
           console.log(`✅ [default] device visibility: reloading local media progress`)
-          // Reload local media progresses
-          await this.$store.dispatch('globals/loadLocalMediaProgress')
+          setTimeout(() => {
+            this.refreshLocalMediaProgress('focus-resume')
+          }, 1200)
         }
         if (document.visibilityState === 'visible') {
           this.$eventBus.$emit('device-focus-update', true)
@@ -320,42 +331,43 @@ export default {
       document.documentElement.lang = code
     }
   },
-  async mounted() {
+    async mounted() {
     this.$eventBus.$on('change-lang', this.changeLanguage)
     document.addEventListener('visibilitychange', this.visibilityChanged)
 
     this.$socket.on('user_updated', this.userUpdated)
     this.$socket.on('user_media_progress_updated', this.userMediaProgressUpdated)
 
-    if (this.$store.state.isFirstLoad) {
-      AbsLogger.info({ tag: 'default', message: `mounted: initializing first load (${this.$platform} v${this.$config.version})` })
-      this.$store.commit('setIsFirstLoad', false)
+      if (this.$store.state.isFirstLoad) {
+        const initStartedAt = Date.now()
+        AbsLogger.info({ tag: 'default', message: `mounted: initializing first load (${this.$platform} v${this.$config.version})` })
+        this.$store.commit('setIsFirstLoad', false)
 
-      this.loadSavedSettings()
-
-      const deviceData = await this.$db.getDeviceData()
-      this.$store.commit('setDeviceData', deviceData)
+        const [deviceData] = await Promise.all([this.$db.getDeviceData(), this.loadSavedSettings()])
+        this.$store.commit('setDeviceData', deviceData)
 
       this.$setOrientationLock(this.$store.getters['getOrientationLockSetting'])
 
       await this.$store.dispatch('setupNetworkListener')
 
-      if (this.$store.state.user.serverConnectionConfig) {
-        AbsLogger.info({ tag: 'default', message: `mounted: Server connected, init libraries (${this.$store.getters['user/getServerConfigName']})` })
-        await this.initLibraries()
+        if (this.$store.state.user.serverConnectionConfig) {
+          AbsLogger.info({ tag: 'default', message: `mounted: Server connected, init libraries (${this.$store.getters['user/getServerConfigName']})` })
+          await this.initLibraries()
       } else {
         AbsLogger.info({ tag: 'default', message: `mounted: Server not connected, attempt connection` })
         await this.attemptConnection()
       }
 
-      await this.syncLocalSessions(true)
+        this.hasMounted = true
 
-      this.hasMounted = true
+        AbsLogger.info({ tag: 'default', message: `mounted: fully initialized in ${Date.now() - initStartedAt}ms` })
+        this.$eventBus.$emit('abs-ui-ready')
 
-      AbsLogger.info({ tag: 'default', message: 'mounted: fully initialized' })
-      this.$eventBus.$emit('abs-ui-ready')
-    }
-  },
+        setTimeout(() => {
+          this.syncLocalSessions(true)
+        }, 600)
+      }
+    },
   beforeDestroy() {
     this.$eventBus.$off('change-lang', this.changeLanguage)
     document.removeEventListener('visibilitychange', this.visibilityChanged)

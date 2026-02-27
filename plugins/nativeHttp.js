@@ -1,6 +1,11 @@
 import { CapacitorHttp } from '@capacitor/core'
 
 export default function ({ store, $db, $socket }, inject) {
+  const isDev = process.env.NODE_ENV !== 'production'
+  const debugLog = (...args) => {
+    if (isDev) console.log(...args)
+  }
+
   const nativeHttp = {
     async request(method, _url, data, options = {}) {
       // When authorizing before a config is set, server config gets passed in as an option
@@ -27,7 +32,7 @@ export default function ({ store, $db, $socket }, inject) {
         headers = { ...headers, ...options.headers }
         delete options.headers
       }
-      console.log(`[nativeHttp] Making ${method} request to ${url}`)
+      debugLog(`[nativeHttp] Making ${method} request to ${url}`)
 
       return CapacitorHttp.request({
         method,
@@ -61,7 +66,7 @@ export default function ({ store, $db, $socket }, inject) {
      */
     async handleTokenRefresh(method, url, data, headers, options, serverConnectionConfig) {
       try {
-        console.log('[nativeHttp] Attempting to refresh token...')
+        debugLog('[nativeHttp] Attempting to refresh token...')
 
         if (!serverConnectionConfig?.id) {
           console.error('[nativeHttp] No server connection config ID available for token refresh')
@@ -86,7 +91,7 @@ export default function ({ store, $db, $socket }, inject) {
         await this.updateTokens(newTokens, serverConnectionConfig)
 
         // Retry the original request with the new token
-        console.log('[nativeHttp] Retrying original request with new token...')
+        debugLog('[nativeHttp] Retrying original request with new token...')
         const retryResponse = await CapacitorHttp.request({
           method,
           url,
@@ -125,7 +130,7 @@ export default function ({ store, $db, $socket }, inject) {
           throw new Error('No server address available')
         }
 
-        console.log('[nativeHttp] Refreshing access token...')
+        debugLog('[nativeHttp] Refreshing access token...')
 
         const response = await CapacitorHttp.post({
           url: `${serverAddress}/auth/refresh`,
@@ -147,7 +152,7 @@ export default function ({ store, $db, $socket }, inject) {
           return null
         }
 
-        console.log('[nativeHttp] Successfully refreshed access token')
+        debugLog('[nativeHttp] Successfully refreshed access token')
         return {
           accessToken: userResponseData.user.accessToken,
           // Refresh token gets returned when refresh token is sent in x-refresh-token header
@@ -195,7 +200,7 @@ export default function ({ store, $db, $socket }, inject) {
           store.commit('user/setServerConnectionConfig', savedConfig)
         }
 
-        console.log('[nativeHttp] Successfully updated tokens in store and secure storage')
+        debugLog('[nativeHttp] Successfully updated tokens in store and secure storage')
       } catch (error) {
         console.error('[nativeHttp] Failed to update tokens:', error)
         throw error
@@ -209,7 +214,7 @@ export default function ({ store, $db, $socket }, inject) {
      */
     async handleRefreshFailure(serverConnectionConfigId) {
       try {
-        console.log('[nativeHttp] Handling refresh failure - logging out user')
+        debugLog('[nativeHttp] Handling refresh failure - logging out user')
 
         // Clear store
         await store.dispatch('user/logout')

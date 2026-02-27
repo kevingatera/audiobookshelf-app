@@ -7,7 +7,6 @@ import { StatusBar, Style } from '@capacitor/status-bar'
 import { Clipboard } from '@capacitor/clipboard'
 import { Capacitor } from '@capacitor/core'
 import { formatDistance, format, addDays, isDate, setDefaultOptions } from 'date-fns'
-import * as locale from 'date-fns/locale'
 
 Vue.directive('click-outside', vClickOutside.directive)
 
@@ -40,9 +39,50 @@ Vue.prototype.$encodeUriPath = (path) => {
   return path.replace(/\\/g, '/').replace(/%/g, '%25').replace(/#/g, '%23')
 }
 
-Vue.prototype.$setDateFnsLocale = (localeString) => {
-  if (!locale[localeString]) return 0
-  return setDefaultOptions({ locale: locale[localeString] })
+const dateFnsLocaleLoaders = {
+  bn: () => import('date-fns/locale/bn/index.js'),
+  ca: () => import('date-fns/locale/ca/index.js'),
+  cs: () => import('date-fns/locale/cs/index.js'),
+  da: () => import('date-fns/locale/da/index.js'),
+  de: () => import('date-fns/locale/de/index.js'),
+  enUS: () => import('date-fns/locale/en-US/index.js'),
+  es: () => import('date-fns/locale/es/index.js'),
+  fi: () => import('date-fns/locale/fi/index.js'),
+  fr: () => import('date-fns/locale/fr/index.js'),
+  hr: () => import('date-fns/locale/hr/index.js'),
+  hu: () => import('date-fns/locale/hu/index.js'),
+  it: () => import('date-fns/locale/it/index.js'),
+  lt: () => import('date-fns/locale/lt/index.js'),
+  nl: () => import('date-fns/locale/nl/index.js'),
+  no: () => import('date-fns/locale/nb/index.js'),
+  pl: () => import('date-fns/locale/pl/index.js'),
+  ptBR: () => import('date-fns/locale/pt-BR/index.js'),
+  ru: () => import('date-fns/locale/ru/index.js'),
+  sl: () => import('date-fns/locale/sl/index.js'),
+  sv: () => import('date-fns/locale/sv/index.js'),
+  tr: () => import('date-fns/locale/tr/index.js'),
+  uk: () => import('date-fns/locale/uk/index.js'),
+  vi: () => import('date-fns/locale/vi/index.js'),
+  zhCN: () => import('date-fns/locale/zh-CN/index.js')
+}
+
+let activeDateFnsLocale = null
+Vue.prototype.$setDateFnsLocale = async (localeString) => {
+  if (!localeString || localeString === activeDateFnsLocale) return 0
+
+  const loader = dateFnsLocaleLoaders[localeString]
+  if (!loader) return 0
+
+  try {
+    const mod = await loader()
+    const loadedLocale = mod.default || mod
+    setDefaultOptions({ locale: loadedLocale })
+    activeDateFnsLocale = localeString
+    return 1
+  } catch (error) {
+    console.error('Failed to load date-fns locale', localeString, error)
+    return 0
+  }
 }
 Vue.prototype.$dateDistanceFromNow = (unixms) => {
   if (!unixms) return ''
