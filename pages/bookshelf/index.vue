@@ -43,6 +43,7 @@ export default {
   data() {
     return {
       shelves: [],
+      categoriesFetchToken: 0,
       isFirstNetworkConnection: true,
       lastServerFetch: 0,
       lastServerFetchLibraryId: null,
@@ -115,6 +116,36 @@ export default {
     }
   },
   methods: {
+    enrichShelvesWithLocalItems(shelves, localLibraryItems) {
+      if (!Array.isArray(shelves) || !shelves.length || !Array.isArray(localLibraryItems) || !localLibraryItems.length) {
+        return shelves
+      }
+
+      const localByServerId = new Map()
+      for (const lli of localLibraryItems) {
+        if (lli?.libraryItemId) {
+          localByServerId.set(String(lli.libraryItemId), lli)
+        }
+      }
+
+      return shelves.map((shelf) => {
+        if (!shelf?.entities || (shelf.type !== 'book' && shelf.type !== 'podcast' && shelf.type !== 'episode')) {
+          return shelf
+        }
+
+        return {
+          ...shelf,
+          entities: shelf.entities.map((entity) => {
+            const localLibraryItem = localByServerId.get(String(entity?.id || ''))
+            if (!localLibraryItem) return entity
+            return {
+              ...entity,
+              localLibraryItem
+            }
+          })
+        }
+      })
+    },
     getShelfLabel(shelf) {
       if (shelf.labelStringKey && this.$strings[shelf.labelStringKey]) return this.$strings[shelf.labelStringKey]
       return shelf.label
@@ -234,21 +265,28 @@ export default {
       }
 
       this.isLoading = true
-
-      // Set local library items first
-      this.localLibraryItems = await this.$db.getLocalLibraryItems()
-      const localCategories = this.getLocalMediaItemCategories()
-      this.shelves = localCategories
-      console.log('[categories] Local shelves set', this.shelves.length, this.lastLocalFetch)
+      const fetchToken = ++this.categoriesFetchToken
 
       if (isConnectedToServerWithInternet) {
-        const categories = await this.$nativeHttp.get(`/api/libraries/${this.currentLibraryId}/personalized?minified=1&include=rssfeed,numEpisodesIncomplete`, { connectTimeout: 10000 }).catch((error) => {
+        const serverStartedAt = Date.now()
+        const categories = await this.$nativeHttp.get(`/api/libraries/${this.currentLibraryId}/personalized?minified=1&include=numEpisodesIncomplete`, { connectTimeout: 10000 }).catch((error) => {
           console.error('[categories] Failed to fetch categories', error)
           return []
         })
+
+        if (fetchToken !== this.categoriesFetchToken) {
+          return
+        }
+
         if (!categories.length) {
           // Failed to load categories so use local shelves
           console.warn(`[categories] Failed to get server categories so using local categories`)
+          this.localLibraryItems = await this.$db.getLocalLibraryItems()
+          if (fetchToken !== this.categoriesFetchToken) {
+            return
+          }
+          const localCategories = this.getLocalMediaItemCategories()
+          this.shelves = localCategories
           this.lastServerFetch = 0
           this.lastLocalFetch = Date.now()
           this.isLoading = false
@@ -256,27 +294,33 @@ export default {
           return
         }
 
-        this.shelves = categories.map((cat) => {
-          if (cat.type == 'book' || cat.type == 'podcast' || cat.type == 'episode') {
-            // Map localLibraryItem to entities
-            cat.entities = cat.entities.map((entity) => {
-              const localLibraryItem = this.localLibraryItems.find((lli) => {
-                return lli.libraryItemId == entity.id
-              })
-              if (localLibraryItem) {
-                entity.localLibraryItem = localLibraryItem
-              }
-              return entity
-            })
-          }
-          return cat
-        })
+        this.shelves = categories
+        this.isLoading = false
 
-        // Only add the local shelf with the same media type
+        const localStartedAt = Date.now()
+        this.localLibraryItems = await this.$db.getLocalLibraryItems()
+        if (fetchToken !== this.categoriesFetchToken) {
+          return
+        }
+        const localCategories = this.getLocalMediaItemCategories()
         const localShelves = localCategories.filter((cat) => cat.type === this.currentLibraryMediaType && !cat.localOnly)
-        this.shelves.push(...localShelves)
+
+        const enrichedShelves = this.enrichShelvesWithLocalItems(this.shelves, this.localLibraryItems)
+        this.shelves = [...enrichedShelves, ...localShelves]
+
+        console.log(`[categories] Server shelves ready in ${Date.now() - serverStartedAt}ms, local enrichment in ${Date.now() - localStartedAt}ms`)
         console.log('[categories] Server shelves set', this.shelves.length, this.lastServerFetch)
+        return
       }
+
+      // Offline/local only
+      this.localLibraryItems = await this.$db.getLocalLibraryItems()
+      const localCategories = this.getLocalMediaItemCategories()
+      if (fetchToken !== this.categoriesFetchToken) {
+        return
+      }
+      this.shelves = localCategories
+      console.log('[categories] Local shelves set', this.shelves.length, this.lastLocalFetch)
 
       this.isLoading = false
     },
@@ -339,9 +383,13 @@ export default {
     }
 
     this.initListeners()
-    await this.$store.dispatch('globals/loadLocalMediaProgress')
     console.log(`[categories] mounted so fetching categories`)
     this.fetchCategories()
+    this.$store.dispatch('globals/loadLocalMediaProgress').then(() => {
+      if (!this.networkConnected) {
+        this.fetchCategories()
+      }
+    })
   },
   beforeDestroy() {
     this.removeListeners()
