@@ -206,8 +206,18 @@ export default {
       await this.$store.dispatch('libraries/load')
 
       AbsLogger.info({ tag: 'default', message: `initLibraries loading library ${this.currentLibraryName}` })
-      await this.$store.dispatch('libraries/fetch', this.currentLibraryId)
+      await this.$store.dispatch('libraries/fetch', {
+        libraryId: this.currentLibraryId,
+        includeFilterData: false
+      })
       this.$eventBus.$emit('library-changed')
+
+      const selectedLibraryId = this.currentLibraryId
+      setTimeout(() => {
+        if (!this.user || !selectedLibraryId || this.currentLibraryId !== selectedLibraryId) return
+        this.$store.dispatch('libraries/fetchFilterData', selectedLibraryId)
+      }, 1800)
+
       this.inittingLibraries = false
     },
     async syncLocalSessions(isFirstSync) {

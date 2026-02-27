@@ -27,6 +27,9 @@ Last updated: 2026-02-28
   - quick request for a small shelf subset (`shelves=recently-added,recent-series`)
   - followed by full personalized request to restore complete shelf set
   - endpoint parameter is additive and optional for compatibility.
+- Found another startup bottleneck: `libraries/fetch` awaited `?include=filterdata`, which can take several seconds and compete with home requests.
+  - `initLibraries` now fetches base library first (`includeFilterData: false`) and emits `library-changed` immediately.
+  - Filter data is fetched in a delayed background call (`fetchFilterData`) to reduce first-screen blocking.
 - **i18n workflow failures** were caused by key ordering comparator mismatch.
   - The GitHub action checks simple lexical order (`keys[i] < keys[i-1]`), not locale-aware sort.
   - Added `scripts/sort-i18n.js` and `npm run i18n:sort` to apply CI-compatible ordering.
