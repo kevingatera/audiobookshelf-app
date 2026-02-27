@@ -34,31 +34,60 @@ export const getters = {
 }
 
 export const actions = {
-  fetch({ state, commit, dispatch, rootState }, libraryId) {
+  fetch({ commit, dispatch, rootState }, payload) {
     if (!rootState.user || !rootState.user.user) {
       console.error('libraries/fetch - User not set')
+      return false
+    }
+
+    const request = typeof payload === 'object' && payload !== null ? payload : { libraryId: payload }
+    const libraryId = request.libraryId
+    const includeFilterData = request.includeFilterData !== false
+    const endpoint = includeFilterData ? `/api/libraries/${libraryId}?include=filterdata` : `/api/libraries/${libraryId}`
+
+    return this.$nativeHttp
+      .get(endpoint)
+      .then((data) => {
+        const library = includeFilterData ? data.library : data
+        const filterData = includeFilterData ? data.filterdata : null
+        const issues = includeFilterData ? data.issues || 0 : 0
+        const numUserPlaylists = includeFilterData ? data.numUserPlaylists || 0 : 0
+
+        dispatch('user/checkUpdateLibrarySortFilter', library.mediaType, { root: true })
+
+        commit('addUpdate', library)
+        if (includeFilterData) {
+          commit('setLibraryIssues', issues)
+          commit('setLibraryFilterData', filterData)
+          commit('setNumUserPlaylists', numUserPlaylists)
+        }
+        commit('setCurrentLibrary', libraryId)
+        return {
+          library,
+          includeFilterData
+        }
+      })
+      .catch((error) => {
+        console.error('Failed', error)
+        return false
+      })
+  },
+  fetchFilterData({ commit, rootState }, libraryId) {
+    if (!rootState.user || !rootState.user.user) {
+      console.error('libraries/fetchFilterData - User not set')
       return false
     }
 
     return this.$nativeHttp
       .get(`/api/libraries/${libraryId}?include=filterdata`)
       .then((data) => {
-        const library = data.library
-        const filterData = data.filterdata
-        const issues = data.issues || 0
-        const numUserPlaylists = data.numUserPlaylists || 0
-
-        dispatch('user/checkUpdateLibrarySortFilter', library.mediaType, { root: true })
-
-        commit('addUpdate', library)
-        commit('setLibraryIssues', issues)
-        commit('setLibraryFilterData', filterData)
-        commit('setNumUserPlaylists', numUserPlaylists)
-        commit('setCurrentLibrary', libraryId)
-        return data
+        commit('setLibraryIssues', data.issues || 0)
+        commit('setLibraryFilterData', data.filterdata || null)
+        commit('setNumUserPlaylists', data.numUserPlaylists || 0)
+        return true
       })
       .catch((error) => {
-        console.error('Failed', error)
+        console.error('Failed to fetch filter data', error)
         return false
       })
   },
