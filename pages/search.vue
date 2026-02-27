@@ -193,10 +193,8 @@ export default {
         return null
       })
       if (value !== this.lastSearch) {
-        console.log(`runSearch: New search was made for ${this.lastSearch} - results are from ${value}`)
         return
       }
-      console.log('RESULTS', results)
 
       this.isFetching = false
 
