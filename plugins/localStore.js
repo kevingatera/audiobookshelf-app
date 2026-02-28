@@ -159,6 +159,16 @@ class LocalStorage {
       return null
     }
   }
+
+  async setPreferenceByKey(key, value) {
+    try {
+      await Preferences.set({ key, value })
+      return true
+    } catch (error) {
+      console.error(`[LocalStorage] Failed to set preference "${key}"`, error)
+      return false
+    }
+  }
 }
 
 

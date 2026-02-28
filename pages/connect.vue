@@ -27,6 +27,8 @@
 </template>
 
 <script>
+import { Dialog } from '@capacitor/dialog'
+
 export default {
   layout: 'blank',
   data() {
@@ -36,10 +38,38 @@ export default {
   },
   computed: {},
   methods: {
+    async maybeRestoreSettingsBackup() {
+      const alreadyPrompted = await this.$localStore.getPreferenceByKey('settingsBackupRestorePrompted')
+      if (alreadyPrompted === '1') return
+
+      const backupInfo = await this.$db.getSettingsBackupInfo().catch(() => null)
+      if (!backupInfo?.exists) return
+
+      const confirmResult = await Dialog.confirm({
+        title: 'Restore settings backup?',
+        message: 'A previous Audiobookshelf Homelab settings backup was found in Downloads. Restore it now?',
+        okButtonTitle: 'Restore',
+        cancelButtonTitle: 'Skip'
+      })
+
+      await this.$localStore.setPreferenceByKey('settingsBackupRestorePrompted', '1')
+
+      if (!confirmResult.value) return
+
+      const restoreResult = await this.$db.restoreSettingsBackup().catch(() => null)
+      if (restoreResult?.success && restoreResult.deviceData) {
+        this.deviceData = restoreResult.deviceData
+        this.$store.commit('setDeviceData', restoreResult.deviceData)
+      }
+    },
     async init() {
       await this.$store.dispatch('setupNetworkListener')
       this.deviceData = await this.$db.getDeviceData()
       this.$store.commit('setDeviceData', this.deviceData)
+
+      if (!this.deviceData?.serverConnectionConfigs?.length) {
+        await this.maybeRestoreSettingsBackup()
+      }
     }
   },
   mounted() {

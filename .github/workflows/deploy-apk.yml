@@ -35,20 +35,38 @@ jobs:
       - name: copy to Android project
         run: npx cap sync
 
+      - name: prepare signing keystore
+        env:
+          ANDROID_SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+          ANDROID_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
+          ANDROID_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
+          ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
+        run: |
+          if [ -z "$ANDROID_SIGNING_KEYSTORE_BASE64" ] || [ -z "$ANDROID_SIGNING_STORE_PASSWORD" ] || [ -z "$ANDROID_SIGNING_KEY_ALIAS" ] || [ -z "$ANDROID_SIGNING_KEY_PASSWORD" ]; then
+            echo "Missing Android signing secrets"
+            exit 1
+          fi
+          KEYSTORE_PATH="$RUNNER_TEMP/homelab-release.jks"
+          printf '%s' "$ANDROID_SIGNING_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
+          echo "ANDROID_SIGNING_KEYSTORE_PATH=$KEYSTORE_PATH" >> "$GITHUB_ENV"
+          echo "ANDROID_SIGNING_STORE_PASSWORD=$ANDROID_SIGNING_STORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "ANDROID_SIGNING_KEY_ALIAS=$ANDROID_SIGNING_KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "ANDROID_SIGNING_KEY_PASSWORD=$ANDROID_SIGNING_KEY_PASSWORD" >> "$GITHUB_ENV"
+
       - name: build Android app
-        run: ./android/gradlew assembleDebug -p android --no-daemon
+        run: ./android/gradlew assembleHomelabRelease -p android --no-daemon
 
       - name: rename apk
-        working-directory: android/app/build/outputs/apk/debug/
+        working-directory: android/app/build/outputs/apk/homelab/release/
         run: |
           build="$(date +%Y%m%d-%H%M%S)-$(git rev-parse --short HEAD)"
           name="audiobookshelf-${build}.apk"
-          mv -v app-debug.apk "${name}"
+          mv -v app-homelab-release.apk "${name}"
 
       - name: prepare test page ressources
         run: |
           mkdir ghpages
-          cp android/app/build/outputs/apk/debug/*apk ghpages/
+          cp android/app/build/outputs/apk/homelab/release/*apk ghpages/
           cp static/Logo.png ghpages/logo.png
           cp .github/testing-page-template.html ghpages/index.html
 
