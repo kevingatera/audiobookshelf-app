@@ -75,6 +75,7 @@ Last updated: 2026-02-28 (late, post-homelab signing + backup restore)
   - `ANDROID_SIGNING_STORE_PASSWORD`
   - `ANDROID_SIGNING_KEY_ALIAS`
   - `ANDROID_SIGNING_KEY_PASSWORD`
+- `Build APK` workflow was adjusted for flavors and now builds `assembleUpstreamDebug` from `apk/upstream/debug`.
 - Default settings backup implemented in native DB plugin:
   - auto-writes backup JSON to shared Downloads as `audiobookshelf-homelab-settings-backup.json`
   - triggered on load and whenever server configs/settings are changed
