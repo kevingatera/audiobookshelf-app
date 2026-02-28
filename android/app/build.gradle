@@ -32,6 +32,22 @@ android {
     freeCompilerArgs = ['-Xjvm-default=all']
   }
   compileSdk rootProject.ext.compileSdkVersion
+  flavorDimensions "edition"
+  signingConfigs {
+    release {
+      def keystorePath = System.getenv("ANDROID_SIGNING_KEYSTORE_PATH")
+      def storePwd = System.getenv("ANDROID_SIGNING_STORE_PASSWORD")
+      def keyAliasName = System.getenv("ANDROID_SIGNING_KEY_ALIAS")
+      def keyPwd = System.getenv("ANDROID_SIGNING_KEY_PASSWORD")
+
+      if (keystorePath && storePwd && keyAliasName && keyPwd) {
+        storeFile file(keystorePath)
+        storePassword storePwd
+        keyAlias keyAliasName
+        keyPassword keyPwd
+      }
+    }
+  }
   defaultConfig {
     applicationId "com.audiobookshelf.app"
     minSdkVersion rootProject.ext.minSdkVersion
@@ -48,6 +64,19 @@ android {
       ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
     }
   }
+  productFlavors {
+    upstream {
+      dimension "edition"
+    }
+    homelab {
+      dimension "edition"
+      applicationIdSuffix ".homelab"
+      versionNameSuffix "-homelab"
+      manifestPlaceholders = [
+        "appAuthRedirectScheme": "com.audiobookshelf.app.homelab"
+      ]
+    }
+  }
   buildTypes {
     debug {
       applicationIdSuffix ".debug"
@@ -57,6 +86,7 @@ android {
     }
     release {
       minifyEnabled false
+      signingConfig signingConfigs.release
       proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
     }
   }

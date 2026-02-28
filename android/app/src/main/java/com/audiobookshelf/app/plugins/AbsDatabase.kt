@@ -2,6 +2,11 @@ package com.audiobookshelf.app.plugins
 
 import android.os.Handler
 import android.os.Looper
+import android.content.ContentUris
+import android.content.ContentValues
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.util.Log
 import com.audiobookshelf.app.MainActivity
 import com.audiobookshelf.app.data.*
@@ -14,6 +19,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.getcapacitor.*
 import com.getcapacitor.annotation.CapacitorPlugin
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -22,6 +28,7 @@ import kotlinx.coroutines.launch
 class AbsDatabase : Plugin() {
   val tag = "AbsDatabase"
   private var jacksonMapper = jacksonObjectMapper().enable(JsonReadFeature.ALLOW_UNESCAPED_CONTROL_CHARS.mappedFeature())
+  private val settingsBackupDisplayName = "audiobookshelf-homelab-settings-backup.json"
 
   private lateinit var mainActivity: MainActivity
   private lateinit var apiHandler: ApiHandler
@@ -31,6 +38,194 @@ class AbsDatabase : Plugin() {
   data class LocalLibraryItemsPayload(val value:List<LocalLibraryItem>)
   data class LocalFoldersPayload(val value:List<LocalFolder>)
   data class ServerConnConfigPayload(val id:String?, val index:Int, val name:String?, val userId:String, val username:String, var version:String, val token:String, val refreshToken:String?, val address:String?, val customHeaders:Map<String,String>?)
+  data class SettingsBackupServerConnectionConfig(
+    val address: String,
+    val username: String,
+    val userId: String?,
+    val name: String?,
+    val version: String?,
+    val customHeaders: Map<String, String>?
+  )
+  data class SettingsBackupPayload(
+    val schemaVersion: Int,
+    val exportedAt: Long,
+    val deviceSettings: DeviceSettings?,
+    val serverConnectionConfigs: List<SettingsBackupServerConnectionConfig>
+  )
+
+  private fun buildSettingsBackupPayload(): SettingsBackupPayload {
+    val configs = DeviceManager.deviceData.serverConnectionConfigs.map {
+      SettingsBackupServerConnectionConfig(
+        address = it.address,
+        username = it.username,
+        userId = it.userId,
+        name = it.name,
+        version = it.version,
+        customHeaders = it.customHeaders
+      )
+    }
+    return SettingsBackupPayload(
+      schemaVersion = 1,
+      exportedAt = System.currentTimeMillis(),
+      deviceSettings = DeviceManager.deviceData.deviceSettings,
+      serverConnectionConfigs = configs
+    )
+  }
+
+  private fun persistSettingsBackup(): Boolean {
+    return try {
+      val payload = buildSettingsBackupPayload()
+      val json = jacksonMapper.writeValueAsString(payload)
+      writeSettingsBackupToDownloads(json)
+    } catch (e: Exception) {
+      Log.e(tag, "persistSettingsBackup failed", e)
+      false
+    }
+  }
+
+  private fun backupSettingsQuietly() {
+    GlobalScope.launch(Dispatchers.IO) {
+      persistSettingsBackup()
+    }
+  }
+
+  private fun writeSettingsBackupToDownloads(json: String): Boolean {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+      try {
+        val resolver = context.contentResolver
+        val projection = arrayOf(MediaStore.Downloads._ID)
+        val selection = "${MediaStore.Downloads.DISPLAY_NAME}=?"
+        val selectionArgs = arrayOf(settingsBackupDisplayName)
+
+        resolver.query(
+          MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+          projection,
+          selection,
+          selectionArgs,
+          null
+        )?.use { cursor ->
+          while (cursor.moveToNext()) {
+            val id = cursor.getLong(0)
+            val existingUri = ContentUris.withAppendedId(MediaStore.Downloads.EXTERNAL_CONTENT_URI, id)
+            resolver.delete(existingUri, null, null)
+          }
+        }
+
+        val values = ContentValues().apply {
+          put(MediaStore.Downloads.DISPLAY_NAME, settingsBackupDisplayName)
+          put(MediaStore.Downloads.MIME_TYPE, "application/json")
+          put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+        }
+
+        val itemUri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+          ?: return false
+        resolver.openOutputStream(itemUri, "wt")?.use { out ->
+          out.write(json.toByteArray(Charsets.UTF_8))
+        } ?: return false
+        true
+      } catch (e: Exception) {
+        Log.e(tag, "writeSettingsBackupToDownloads failed", e)
+        false
+      }
+    } else {
+      try {
+        @Suppress("DEPRECATION")
+        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        if (!downloadsDir.exists()) downloadsDir.mkdirs()
+        val backupFile = File(downloadsDir, settingsBackupDisplayName)
+        backupFile.writeText(json)
+        true
+      } catch (e: Exception) {
+        Log.e(tag, "writeSettingsBackupToDownloads legacy failed", e)
+        false
+      }
+    }
+  }
+
+  private fun readSettingsBackupFromDownloads(): Pair<String, Long>? {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+      try {
+        val resolver = context.contentResolver
+        val projection = arrayOf(MediaStore.Downloads._ID, MediaStore.Downloads.DATE_MODIFIED)
+        val selection = "${MediaStore.Downloads.DISPLAY_NAME}=?"
+        val selectionArgs = arrayOf(settingsBackupDisplayName)
+        resolver.query(
+          MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+          projection,
+          selection,
+          selectionArgs,
+          "${MediaStore.Downloads.DATE_MODIFIED} DESC"
+        )?.use { cursor ->
+          if (!cursor.moveToFirst()) return null
+          val id = cursor.getLong(0)
+          val modifiedSeconds = cursor.getLong(1)
+          val modifiedMs = modifiedSeconds * 1000L
+          val uri = ContentUris.withAppendedId(MediaStore.Downloads.EXTERNAL_CONTENT_URI, id)
+          val content = resolver.openInputStream(uri)?.use { input ->
+            input.bufferedReader(Charsets.UTF_8).readText()
+          } ?: return null
+          Pair(content, modifiedMs)
+        }
+      } catch (e: Exception) {
+        Log.e(tag, "readSettingsBackupFromDownloads failed", e)
+        null
+      }
+    } else {
+      try {
+        @Suppress("DEPRECATION")
+        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        val backupFile = File(downloadsDir, settingsBackupDisplayName)
+        if (!backupFile.exists()) {
+          null
+        } else {
+          Pair(backupFile.readText(), backupFile.lastModified())
+        }
+      } catch (e: Exception) {
+        Log.e(tag, "readSettingsBackupFromDownloads legacy failed", e)
+        null
+      }
+    }
+  }
+
+  private fun restoreSettingsBackupInternal(): DeviceData? {
+    return try {
+      val backupData = readSettingsBackupFromDownloads() ?: return null
+      val payload = jacksonMapper.readValue<SettingsBackupPayload>(backupData.first)
+      val restoredConfigs = payload.serverConnectionConfigs.mapIndexedNotNull { index, cfg ->
+        val address = cfg.address.trim().trimEnd('/')
+        val username = cfg.username.trim()
+        if (address.isEmpty() || username.isEmpty()) {
+          null
+        } else {
+          val id = DeviceManager.getBase64Id("$address@$username")
+          ServerConnectionConfig(
+            id = id,
+            index = index,
+            name = cfg.name ?: "$address ($username)",
+            address = address,
+            version = cfg.version,
+            userId = cfg.userId ?: "",
+            username = username,
+            token = "",
+            customHeaders = cfg.customHeaders
+          )
+        }
+      }
+      val restoredDeviceData = DeviceData(
+        serverConnectionConfigs = restoredConfigs.toMutableList(),
+        lastServerConnectionConfigId = null,
+        deviceSettings = payload.deviceSettings ?: DeviceSettings.default(),
+        lastPlaybackSession = DeviceManager.deviceData.lastPlaybackSession
+      )
+      DeviceManager.deviceData = restoredDeviceData
+      DeviceManager.serverConnectionConfig = null
+      DeviceManager.dbManager.saveDeviceData(restoredDeviceData)
+      restoredDeviceData
+    } catch (e: Exception) {
+      Log.e(tag, "restoreSettingsBackupInternal failed", e)
+      null
+    }
+  }
 
   override fun load() {
     mainActivity = (activity as MainActivity)
@@ -42,6 +237,7 @@ class AbsDatabase : Plugin() {
     DeviceManager.dbManager.cleanLocalMediaProgress()
     DeviceManager.dbManager.cleanLocalLibraryItems()
     DeviceManager.dbManager.cleanLogs()
+    backupSettingsQuietly()
   }
 
   @PluginMethod
@@ -49,6 +245,44 @@ class AbsDatabase : Plugin() {
     GlobalScope.launch(Dispatchers.IO) {
       val deviceData = DeviceManager.dbManager.getDeviceData()
       call.resolve(JSObject(jacksonMapper.writeValueAsString(deviceData)))
+    }
+  }
+
+  @PluginMethod
+  fun writeSettingsBackup(call: PluginCall) {
+    GlobalScope.launch(Dispatchers.IO) {
+      val success = persistSettingsBackup()
+      val result = JSObject()
+      result.put("success", success)
+      call.resolve(result)
+    }
+  }
+
+  @PluginMethod
+  fun getSettingsBackupInfo(call: PluginCall) {
+    GlobalScope.launch(Dispatchers.IO) {
+      val backup = readSettingsBackupFromDownloads()
+      val result = JSObject()
+      result.put("exists", backup != null)
+      if (backup != null) {
+        result.put("lastModified", backup.second)
+      }
+      call.resolve(result)
+    }
+  }
+
+  @PluginMethod
+  fun restoreSettingsBackup(call: PluginCall) {
+    GlobalScope.launch(Dispatchers.IO) {
+      val restoredDeviceData = restoreSettingsBackupInternal()
+      val result = JSObject()
+      if (restoredDeviceData == null) {
+        result.put("success", false)
+      } else {
+        result.put("success", true)
+        result.put("deviceData", JSObject(jacksonMapper.writeValueAsString(restoredDeviceData)))
+      }
+      call.resolve(result)
     }
   }
 
@@ -178,6 +412,7 @@ class AbsDatabase : Plugin() {
       }
 
       DeviceManager.serverConnectionConfig = serverConnectionConfig
+      backupSettingsQuietly()
       call.resolve(JSObject(jacksonMapper.writeValueAsString(DeviceManager.serverConnectionConfig)))
     }
   }
@@ -198,6 +433,7 @@ class AbsDatabase : Plugin() {
       if (DeviceManager.serverConnectionConfig?.id == serverConnectionConfigId) {
         DeviceManager.serverConnectionConfig = null
       }
+      backupSettingsQuietly()
       call.resolve()
     }
   }
@@ -564,6 +800,7 @@ class AbsDatabase : Plugin() {
     Handler(Looper.getMainLooper()).post {
       DeviceManager.deviceData.deviceSettings = newDeviceSettings
       DeviceManager.dbManager.saveDeviceData(DeviceManager.deviceData)
+      backupSettingsQuietly()
 
       // Updates playback actions for media notification (handles media control seek locking setting)
       if (mainActivity.isPlayerNotificationServiceInitialized()) {

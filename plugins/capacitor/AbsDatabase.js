@@ -32,6 +32,58 @@ class AbsDatabaseWeb extends WebPlugin {
     return deviceData
   }
 
+  async writeSettingsBackup() {
+    const deviceData = await this.getDeviceData()
+    localStorage.setItem('settingsBackup', JSON.stringify({
+      schemaVersion: 1,
+      exportedAt: Date.now(),
+      deviceSettings: deviceData.deviceSettings,
+      serverConnectionConfigs: deviceData.serverConnectionConfigs.map((cfg) => ({
+        address: cfg.address,
+        username: cfg.username,
+        userId: cfg.userId,
+        name: cfg.name,
+        version: cfg.version,
+        customHeaders: cfg.customHeaders || {}
+      }))
+    }))
+    return { success: true }
+  }
+
+  async getSettingsBackupInfo() {
+    const backup = localStorage.getItem('settingsBackup')
+    return {
+      exists: !!backup,
+      lastModified: backup ? Date.now() : null
+    }
+  }
+
+  async restoreSettingsBackup() {
+    const backupRaw = localStorage.getItem('settingsBackup')
+    if (!backupRaw) return { success: false }
+
+    const backup = JSON.parse(backupRaw)
+    const currentDeviceData = await this.getDeviceData()
+    const restoredDeviceData = {
+      ...currentDeviceData,
+      serverConnectionConfigs: (backup.serverConnectionConfigs || []).map((cfg, index) => ({
+        id: encodeURIComponent(Buffer.from(`${cfg.address}@${cfg.username}`).toString('base64')),
+        index,
+        name: cfg.name || `${cfg.address} (${cfg.username})`,
+        address: cfg.address,
+        version: cfg.version,
+        userId: cfg.userId || '',
+        username: cfg.username,
+        token: '',
+        customHeaders: cfg.customHeaders || {}
+      })),
+      lastServerConnectionConfigId: null,
+      deviceSettings: backup.deviceSettings || currentDeviceData.deviceSettings
+    }
+    localStorage.setItem('device', JSON.stringify(restoredDeviceData))
+    return { success: true, deviceData: restoredDeviceData }
+  }
+
   /**
    *
    * @param {ServerConnectionConfig} serverConnectionConfig

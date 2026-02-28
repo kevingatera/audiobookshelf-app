@@ -1,6 +1,6 @@
 # Continuity Notes
 
-Last updated: 2026-02-28 (late)
+Last updated: 2026-02-28 (late, post-homelab signing + backup restore)
 
 ## Current branch status
 
@@ -58,8 +58,31 @@ Last updated: 2026-02-28 (late)
 - For translation edits, run `npm run i18n:sort` before pushing.
 - `Publish Test App` requires repository Pages to stay enabled.
 - Latest release published manually after CI:
-  - `homelab-book-requests-debug-20260228-r4`
-  - APK: `audiobookshelf-20260228-034439-a893a94.apk`
+- `homelab-book-requests-debug-20260228-r4`
+- APK: `audiobookshelf-20260228-034439-a893a94.apk`
+- New release published after latest successful `master` workflows:
+  - `homelab-book-requests-debug-20260228-r5`
+  - APK: `audiobookshelf-20260228-040419-cdc445b.apk`
+  - Commit: `cdc445b5` (`improve first-run connect flow and item navigation responsiveness`)
+
+## New homelab packaging and backup behavior
+
+- Added Android flavor `homelab` to keep side-by-side install with upstream app:
+  - `applicationId`: `com.audiobookshelf.app.homelab` via suffix
+  - app label override: `Audiobookshelf Homelab`
+- `Publish Test App` now builds signed `assembleHomelabRelease` APK (instead of unsigned debug) using repository secrets:
+  - `ANDROID_SIGNING_KEYSTORE_BASE64`
+  - `ANDROID_SIGNING_STORE_PASSWORD`
+  - `ANDROID_SIGNING_KEY_ALIAS`
+  - `ANDROID_SIGNING_KEY_PASSWORD`
+- Default settings backup implemented in native DB plugin:
+  - auto-writes backup JSON to shared Downloads as `audiobookshelf-homelab-settings-backup.json`
+  - triggered on load and whenever server configs/settings are changed
+  - backup excludes auth tokens (security)
+- First-setup restore flow added on `/connect`:
+  - when no saved server configs exist and backup is found, app prompts to restore
+  - restore repopulates server configs (without tokens) + device settings
+  - prompt is shown once per install using local preference flag
 
 ## Follow-up suggestions for future PR to upstream
 

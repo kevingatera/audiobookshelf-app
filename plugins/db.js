@@ -10,6 +10,18 @@ class DbService {
     })
   }
 
+  writeSettingsBackup() {
+    return AbsDatabase.writeSettingsBackup()
+  }
+
+  getSettingsBackupInfo() {
+    return AbsDatabase.getSettingsBackupInfo()
+  }
+
+  restoreSettingsBackup() {
+    return AbsDatabase.restoreSettingsBackup()
+  }
+
   /**
    * Retrieves refresh token from secure storage
    * @param {string} serverConnectionConfigId
