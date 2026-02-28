@@ -1,49 +1,62 @@
 <template>
-  <modals-modal v-model="show" width="90%" height="100%">
-    <template #outer>
-      <div v-show="selected !== 'all'" class="absolute top-12 left-4 z-40">
-        <ui-btn class="text-lg border-yellow-400 border-opacity-40 h-10" :padding-y="0" @click="clearSelected">{{ $strings.ButtonClearFilter }}</ui-btn>
+  <modals-bottom-sheet v-model="show" :title="$strings.LabelFilter || 'Filter'">
+    <div class="w-full">
+      <!-- Clear filter button -->
+      <div v-if="selected !== 'all'" class="px-4 py-2 border-b border-warm">
+        <button class="text-sm font-medium px-3 py-1.5 rounded-full border border-success/40 text-success" @click="clearSelected">{{ $strings.ButtonClearFilter }}</button>
       </div>
-    </template>
-    <div class="w-full h-full overflow-hidden absolute top-0 left-0 flex items-center justify-center" @click="show = false">
-      <div class="w-full overflow-x-hidden overflow-y-auto bg-primary rounded-lg border border-fg/20 mt-8" style="max-height: 75%" @click.stop>
-        <ul v-show="!sublist" class="h-full w-full" role="listbox" aria-labelledby="listbox-label">
-          <template v-for="item in items">
-            <li :key="item.value" class="text-fg select-none relative py-4 pr-9 cursor-pointer" :class="item.value === selected ? 'bg-bg bg-opacity-50' : ''" role="option" @click="clickedOption(item)">
-              <div class="flex items-center justify-between">
-                <span class="font-normal ml-3 block truncate text-lg">{{ item.text }}</span>
-              </div>
-              <div v-if="item.sublist" class="absolute right-1 top-0 bottom-0 h-full flex items-center">
-                <span class="material-symbols text-2xl">arrow_right</span>
-              </div>
-            </li>
-          </template>
-        </ul>
-        <ul v-show="sublist" class="h-full w-full rounded-lg" role="listbox" aria-labelledby="listbox-label">
-          <li class="text-fg select-none relative py-3 pl-9 cursor-pointer" role="option" @click="sublist = null">
-            <div class="absolute left-1 top-0 bottom-0 h-full flex items-center">
-              <span class="material-symbols text-2xl">arrow_left</span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="font-normal ml-3 block truncate text-lg">{{ $strings.ButtonBack }}</span>
+
+      <!-- Main filter list -->
+      <ul v-show="!sublist" class="w-full" role="listbox" aria-labelledby="listbox-label">
+        <template v-for="item in items">
+          <li
+            :key="item.value"
+            class="text-fg select-none relative cursor-pointer border-b border-warm"
+            :class="item.value === selected ? 'bg-bg/30' : ''"
+            style="min-height: 48px"
+            role="option"
+            @click="clickedOption(item)"
+          >
+            <div class="flex items-center justify-between px-4 py-3.5">
+              <span class="font-normal block truncate text-base">{{ item.text }}</span>
+              <span v-if="item.sublist" class="material-symbols text-xl text-fg-muted">chevron_right</span>
+              <span v-else-if="item.value === selected" class="material-symbols text-xl" style="color: #1ad691">check</span>
             </div>
           </li>
-          <li v-if="!sublistItems.length" class="text-gray-400 select-none relative px-2" role="option">
-            <div class="flex items-center justify-center">
-              <span class="font-normal block truncate py-5 text-lg">No {{ sublist }} items</span>
+        </template>
+      </ul>
+
+      <!-- Sublist -->
+      <ul v-show="sublist" class="w-full" role="listbox" aria-labelledby="listbox-label">
+        <li class="text-fg select-none relative cursor-pointer border-b border-warm" style="min-height: 48px" role="option" @click="sublist = null">
+          <div class="flex items-center px-4 py-3.5">
+            <span class="material-symbols text-xl text-fg-muted mr-2">arrow_back</span>
+            <span class="font-normal block truncate text-base">{{ $strings.ButtonBack }}</span>
+          </div>
+        </li>
+        <li v-if="!sublistItems.length" class="text-fg-muted select-none relative px-4" role="option">
+          <div class="flex items-center justify-center py-5">
+            <span class="font-normal block truncate text-base">No {{ sublist }} items</span>
+          </div>
+        </li>
+        <template v-for="item in sublistItems">
+          <li
+            :key="item.value"
+            class="text-fg select-none relative cursor-pointer border-b border-warm"
+            :class="`${sublist}.${item.value}` === selected ? 'bg-bg/30' : ''"
+            style="min-height: 48px"
+            role="option"
+            @click="clickedSublistOption(item.value)"
+          >
+            <div class="flex items-center justify-between px-4 py-3">
+              <span class="font-normal truncate text-base">{{ item.text }}</span>
+              <span v-if="`${sublist}.${item.value}` === selected" class="material-symbols text-xl" style="color: #1ad691">check</span>
             </div>
           </li>
-          <template v-for="item in sublistItems">
-            <li :key="item.value" class="text-fg select-none relative px-4 cursor-pointer" :class="`${sublist}.${item.value}` === selected ? 'bg-bg bg-opacity-50' : ''" role="option" @click="clickedSublistOption(item.value)">
-              <div class="flex items-center">
-                <span class="font-normal truncate py-3 text-base">{{ item.text }}</span>
-              </div>
-            </li>
-          </template>
-        </ul>
-      </div>
+        </template>
+      </ul>
     </div>
-  </modals-modal>
+  </modals-bottom-sheet>
 </template>
 
 <script>
@@ -302,9 +315,3 @@ export default {
   mounted() {}
 }
 </script>
-
-<style>
-.filter-modal-wrapper {
-  max-height: calc(100% - 320px);
-}
-</style>

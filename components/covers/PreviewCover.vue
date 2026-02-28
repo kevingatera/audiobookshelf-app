@@ -18,7 +18,7 @@
       </div>
     </div>
 
-    <p v-if="!imageFailed && showResolution" class="absolute -bottom-5 left-0 right-0 mx-auto text-xs text-gray-300 text-center">{{ resolution }}</p>
+    <p v-if="!imageFailed && showResolution" class="absolute -bottom-5 left-0 right-0 mx-auto text-xs text-fg-muted text-center">{{ resolution }}</p>
   </div>
 </template>
 

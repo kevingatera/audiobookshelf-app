@@ -28,6 +28,11 @@ export default {
 
   plugins: ['@/plugins/server.js', '@/plugins/db.js', '@/plugins/localStore.js', '@/plugins/init.client.js', '@/plugins/axios.js', '@/plugins/capacitor/index.js', '@/plugins/capacitor/AbsAudioPlayer.js', '@/plugins/nativeHttp.js', '@/plugins/toast.js', '@/plugins/constants.js', '@/plugins/haptics.js', '@/plugins/i18n.js'],
 
+  pageTransition: {
+    name: 'page',
+    mode: 'out-in'
+  },
+
   components: true,
 
   modules: ['@nuxtjs/axios'],

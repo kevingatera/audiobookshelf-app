@@ -64,6 +64,10 @@ Last updated: 2026-02-28 (late, post-homelab signing + backup restore)
   - `homelab-book-requests-debug-20260228-r5`
   - APK: `audiobookshelf-20260228-040419-cdc445b.apk`
   - Commit: `cdc445b5` (`improve first-run connect flow and item navigation responsiveness`)
+- Latest signed homelab release after flavor/signing migration:
+  - `homelab-book-requests-debug-20260228-r6`
+  - APK: `audiobookshelf-20260228-152623-ace5674.apk`
+  - Commit: `ace5674c`
 
 ## New homelab packaging and backup behavior
 

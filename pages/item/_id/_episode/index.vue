@@ -1,34 +1,39 @@
 <template>
-  <div class="w-full h-full px-3 py-4 overflow-y-auto overflow-x-hidden relative bg-bg">
-    <div class="flex mb-2">
+  <div class="w-full h-full overflow-y-auto overflow-x-hidden relative bg-bg" style="-webkit-overflow-scrolling: touch">
+    <!-- Podcast info -->
+    <div class="flex items-center px-4 pt-4 mb-3">
       <div class="w-10 min-w-10">
         <covers-preview-cover :src="coverUrl" :width="40" :book-cover-aspect-ratio="bookCoverAspectRatio" :show-resolution="false" class="md:hidden" />
       </div>
-      <div class="flex-grow px-2">
-        <div class="-mt-0.5 mb-0.5">
-          <nuxt-link :to="`/item/${libraryItemId}`" class="text-sm text-fg underline">{{ podcast.metadata.title }}</nuxt-link>
-        </div>
-        <p v-if="publishedAt" class="text-xs text-fg-muted">{{ $dateDistanceFromNow(publishedAt) }}</p>
+      <div class="flex-grow px-3 min-w-0">
+        <nuxt-link :to="`/item/${libraryItemId}`" class="text-sm text-accent">{{ podcast.metadata.title }}</nuxt-link>
+        <p v-if="publishedAt" class="text-xs text-fg-muted mt-0.5">{{ $dateDistanceFromNow(publishedAt) }}</p>
       </div>
     </div>
 
-    <p class="text-lg font-semibold">{{ title }}</p>
+    <!-- Episode title -->
+    <p class="text-lg font-semibold text-fg px-4">{{ title }}</p>
 
-    <div v-if="episodeNumber || season || episodeType" class="flex py-2 items-center -mx-0.5">
-      <div v-if="episodeNumber" class="px-2 pt-px pb-0.5 mx-0.5 bg-primary bg-opacity-60 rounded-full text-xs font-light text-fg">{{ $strings.LabelEpisode }} #{{ episodeNumber }}</div>
-      <div v-if="season" class="px-2 pt-px pb-0.5 mx-0.5 bg-primary bg-opacity-60 rounded-full text-xs font-light text-fg">{{ $strings.LabelSeason }} #{{ season }}</div>
-      <div v-if="episodeType" class="px-2 pt-px pb-0.5 mx-0.5 bg-primary bg-opacity-60 rounded-full text-xs font-light text-fg capitalize">{{ episodeType }}</div>
+    <!-- Tags / badges -->
+    <div v-if="episodeNumber || season || episodeType" class="flex px-4 py-2 items-center -mx-0.5 flex-wrap">
+      <div v-if="episodeNumber" class="px-2.5 py-0.5 mx-0.5 mb-1 bg-secondary rounded-full text-xs text-fg-muted">{{ $strings.LabelEpisode }} #{{ episodeNumber }}</div>
+      <div v-if="season" class="px-2.5 py-0.5 mx-0.5 mb-1 bg-secondary rounded-full text-xs text-fg-muted">{{ $strings.LabelSeason }} #{{ season }}</div>
+      <div v-if="episodeType" class="px-2.5 py-0.5 mx-0.5 mb-1 bg-secondary rounded-full text-xs text-fg-muted capitalize">{{ episodeType }}</div>
     </div>
 
-    <!-- user progress card -->
-    <div v-if="progressPercent > 0" class="px-4 py-2 bg-primary text-sm font-semibold rounded-md text-fg mt-4 relative" :class="resettingProgress ? 'opacity-25' : ''">
-      <p class="leading-6">{{ $strings.LabelYourProgress }}: {{ Math.round(progressPercent * 100) }}%</p>
-      <p v-if="progressPercent < 1" class="text-fg-muted text-xs">{{ $getString('LabelTimeRemaining', [$elapsedPretty(userTimeRemaining)]) }}</p>
-      <p v-else class="text-fg-muted text-xs">{{ $strings.LabelFinished }} {{ $formatDate(userProgressFinishedAt) }}</p>
+    <!-- User progress card -->
+    <div v-if="progressPercent > 0" class="mx-4 mt-4 bg-secondary rounded-xl px-4 py-3 relative" :class="resettingProgress ? 'opacity-25' : ''">
+      <p class="text-sm font-semibold text-fg leading-6">{{ $strings.LabelYourProgress }}: {{ Math.round(progressPercent * 100) }}%</p>
+      <p v-if="progressPercent < 1" class="text-fg-muted text-xs mt-0.5">{{ $getString('LabelTimeRemaining', [$elapsedPretty(userTimeRemaining)]) }}</p>
+      <p v-else class="text-fg-muted text-xs mt-0.5">{{ $strings.LabelFinished }} {{ $formatDate(userProgressFinishedAt) }}</p>
+      <!-- Progress bar -->
+      <div class="mt-2 h-1 bg-bg rounded-full overflow-hidden">
+        <div class="h-full bg-accent rounded-full transition-all duration-300" :style="{ width: Math.round(progressPercent * 100) + '%' }"></div>
+      </div>
     </div>
 
-    <!-- action buttons -->
-    <div class="flex mt-4 -mx-1">
+    <!-- Action buttons -->
+    <div class="flex mt-4 px-4 -mx-1">
       <ui-btn color="success" class="flex items-center justify-center flex-grow mx-1" :loading="playerIsStartingForThisMedia" :padding-x="4" @click="playClick">
         <span class="material-symbols text-2xl fill">{{ playerIsPlaying ? 'pause' : 'play_arrow' }}</span>
         <span class="px-1 text-sm">{{ playerIsPlaying ? $strings.ButtonPause : localEpisodeId ? $strings.ButtonPlay : $strings.ButtonStream }}</span>
@@ -41,9 +46,12 @@
       </ui-btn>
     </div>
 
-    <p class="text-sm text-fg mt-1.5 mb-0.5 default-style description-container" v-html="transformedDescription"></p>
+    <!-- Description -->
+    <div class="mx-4 mt-4 mb-4 bg-secondary rounded-xl px-4 py-3">
+      <p class="text-sm text-fg default-style description-container" v-html="transformedDescription"></p>
+    </div>
 
-    <!-- loading overlay -->
+    <!-- Loading overlay -->
     <div v-if="processing" class="absolute top-0 left-0 w-full h-full bg-black bg-opacity-30 flex items-center justify-center">
       <widgets-loading-spinner size="la-lg" />
     </div>

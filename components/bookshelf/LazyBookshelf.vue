@@ -151,7 +151,7 @@ export default {
     totalEntityCardWidth() {
       if (this.showBookshelfListView) return this.entityWidth
       // Includes margin
-      return this.entityWidth + 24
+      return this.entityWidth + 28
     },
     altViewEnabled() {
       return this.$store.getters['getAltViewEnabled']

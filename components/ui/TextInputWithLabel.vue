@@ -1,6 +1,6 @@
 <template>
   <div class="w-full">
-    <p class="pb-0.5 text-sm font-semibold">{{ label }}</p>
+    <p class="text-xs font-semibold text-fg-muted uppercase tracking-wider mb-1">{{ label }}</p>
     <ui-text-input v-model="inputValue" ref="input" :disabled="disabled" :type="type" :placeholder="placeholder" :autofocus="autofocus" text-size="base" class="w-full" />
   </div>
 </template>

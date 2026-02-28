@@ -1,5 +1,5 @@
 <template>
-  <button class="icon-btn rounded-md flex items-center justify-center h-9 w-9 relative" :disabled="disabled || loading" :class="className" :type="type" @mousedown.prevent @click="clickBtn">
+  <button class="icon-btn rounded-full flex items-center justify-center relative transition-colors duration-150" :disabled="disabled || loading" :class="className" :type="type" style="width: 40px; height: 40px; min-width: 40px; min-height: 40px" @mousedown.prevent @click="clickBtn">
     <div v-if="loading" class="text-fg absolute top-0 left-0 w-full h-full flex items-center justify-center text-opacity-100">
       <svg class="animate-spin" style="width: 24px; height: 24px" viewBox="0 0 24 24">
         <path fill="currentColor" d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z" />
@@ -31,9 +31,12 @@ export default {
   },
   computed: {
     className() {
-      var classes = []
+      var classes = ['hover:bg-fg/10 active:bg-fg/15']
       if (!this.borderless) {
-        classes.push(`bg-${this.bgColor} border border-gray-600`)
+        classes.push(`bg-${this.bgColor} border border-warm`)
+      }
+      if (this.disabled) {
+        classes.push('opacity-50 cursor-not-allowed')
       }
       return classes.join(' ')
     },
@@ -60,23 +63,6 @@ export default {
 <style>
 button.icon-btn:disabled {
   cursor: not-allowed;
-}
-button.icon-btn::before {
-  content: '';
-  position: absolute;
-  border-radius: 6px;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(255, 255, 255, 0);
-  transition: all 0.1s ease-in-out;
-}
-button.icon-btn:hover:not(:disabled)::before {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-button.icon-btn:disabled::before {
-  background-color: rgba(0, 0, 0, 0.2);
 }
 button.icon-btn:disabled span {
   color: #777;

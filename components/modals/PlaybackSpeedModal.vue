@@ -1,36 +1,33 @@
 <template>
-  <modals-modal v-model="show" @input="modalInput" :width="200" height="100%">
-    <template #outer>
-      <div class="absolute top-8 left-4 z-40">
-        <p class="text-white text-2xl truncate">{{ $strings.LabelPlaybackSpeed }}</p>
+  <modals-bottom-sheet v-model="show" :title="$strings.LabelPlaybackSpeed">
+    <div class="w-full">
+      <!-- Speed presets as pill buttons -->
+      <div class="flex flex-wrap gap-2 px-4 py-4 justify-center">
+        <button
+          v-for="rate in rates"
+          :key="rate"
+          class="px-4 py-2 rounded-full text-base font-medium transition-colors"
+          :class="rate === selected ? 'bg-success/20 text-success border border-success/40' : 'bg-bg text-fg border border-warm'"
+          @click="clickedOption(rate)"
+        >
+          {{ rate }}x
+        </button>
       </div>
-    </template>
 
-    <div class="w-full h-full overflow-hidden absolute top-0 left-0 flex items-center justify-center">
-      <div class="w-full overflow-x-hidden overflow-y-auto bg-primary rounded-lg border border-border" style="max-height: 75%" @click.stop>
-        <ul class="w-full" role="listbox" aria-labelledby="listbox-label">
-          <template v-for="rate in rates">
-            <li :key="rate" class="text-fg select-none relative py-4" :class="rate === selected ? 'bg-bg-hover/50' : ''" role="option" @click="clickedOption(rate)">
-              <div class="flex items-center justify-center">
-                <span class="font-normal block truncate text-lg">{{ rate }}x</span>
-              </div>
-            </li>
-          </template>
-        </ul>
-        <div class="flex items-center justify-center py-3 border-t border-fg/10">
-          <button :disabled="!canDecrement" @click="decrement" class="icon-num-btn w-8 h-8 text-fg-muted rounded border border-border flex items-center justify-center">
-            <span class="material-symbols">remove</span>
-          </button>
-          <div class="w-24 text-center">
-            <p class="text-xl">{{ playbackRate }}<span class="text-lg">⨯</span></p>
-          </div>
-          <button :disabled="!canIncrement" @click="increment" class="icon-num-btn w-8 h-8 text-fg-muted rounded border border-border flex items-center justify-center">
-            <span class="material-symbols">add</span>
-          </button>
+      <!-- Fine-tune controls -->
+      <div class="flex items-center justify-center py-4 border-t border-warm">
+        <button :disabled="!canDecrement" @click="decrement" class="icon-num-btn w-10 h-10 text-fg-muted rounded-full border border-warm flex items-center justify-center">
+          <span class="material-symbols">remove</span>
+        </button>
+        <div class="w-28 text-center">
+          <p class="text-2xl text-fg">{{ playbackRate }}<span class="text-lg text-fg-muted">⨯</span></p>
         </div>
+        <button :disabled="!canIncrement" @click="increment" class="icon-num-btn w-10 h-10 text-fg-muted rounded-full border border-warm flex items-center justify-center">
+          <span class="material-symbols">add</span>
+        </button>
       </div>
     </div>
-  </modals-modal>
+  </modals-bottom-sheet>
 </template>
 
 <script>
@@ -50,6 +47,11 @@ export default {
     show(newVal) {
       if (newVal) {
         this.currentPlaybackRate = this.selected
+      } else {
+        // On close, emit change if speed was modified via increment/decrement
+        if (this.currentPlaybackRate !== this.selected) {
+          this.$emit('change', this.selected)
+        }
       }
     }
   },
@@ -90,13 +92,6 @@ export default {
       if (this.selected - 0.1 < this.MIN_SPEED) return
       var newPlaybackRate = this.selected - 0.1
       this.selected = Number(newPlaybackRate.toFixed(1))
-    },
-    modalInput(val) {
-      if (!val) {
-        if (this.currentPlaybackRate !== this.selected) {
-          this.$emit('change', this.selected)
-        }
-      }
     },
     clickedOption(rate) {
       this.selected = Number(rate)
