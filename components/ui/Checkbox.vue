@@ -1,8 +1,8 @@
 <template>
   <label class="flex justify-start items-center" :class="!disabled ? 'cursor-pointer' : ''">
-    <div class="border-2 rounded flex flex-shrink-0 justify-center items-center" :class="wrapperClass">
+    <div class="rounded-md flex flex-shrink-0 justify-center items-center transition-all duration-150" :class="wrapperClass">
       <input v-model="selected" :disabled="disabled" type="checkbox" class="opacity-0 absolute" :class="!disabled ? 'cursor-pointer' : ''" />
-      <svg v-if="selected" class="fill-current pointer-events-none" :class="svgClass" viewBox="0 0 20 20"><path d="M0 11l2-2 5 5L18 3l2 2L7 18z" /></svg>
+      <svg v-if="selected" class="fill-current pointer-events-none text-white" :class="svgClass" viewBox="0 0 20 20"><path d="M0 11l2-2 5 5L18 3l2 2L7 18z" /></svg>
     </div>
     <div v-if="label" class="select-none text-fg" :class="labelClassname">{{ label }}</div>
   </label>
@@ -45,22 +45,28 @@ export default {
       }
     },
     wrapperClass() {
-      var classes = [`bg-${this.checkboxBg} border-${this.borderColor}`]
+      var classes = []
+      if (this.selected) {
+        classes.push('bg-accent border-2 border-accent')
+      } else {
+        classes.push('bg-transparent border-2 border-warm-emphasis')
+      }
+      // Fixed 20x20 size
       if (this.small) classes.push('w-4 h-4')
-      else classes.push('w-6 h-6')
+      else classes.push('w-5 h-5')
 
       return classes.join(' ')
     },
     labelClassname() {
       if (this.labelClass) return this.labelClass
-      var classes = ['pl-1']
+      var classes = ['pl-2']
       if (this.small) classes.push('text-xs md:text-sm')
       return classes.join(' ')
     },
     svgClass() {
-      var classes = [`text-${this.checkColor}`]
-      if (this.small) classes.push('w-3 h-3')
-      else classes.push('w-4 h-4')
+      var classes = []
+      if (this.small) classes.push('w-2.5 h-2.5')
+      else classes.push('w-3 h-3')
 
       return classes.join(' ')
     }

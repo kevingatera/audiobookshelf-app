@@ -1,50 +1,59 @@
 <template>
-  <div class="w-full h-full relative overflow-hidden">
+  <div class="w-full h-full relative overflow-hidden bg-bg">
     <template v-if="!showSelectedFeed">
-      <div class="w-full mx-auto h-20 flex items-center px-2">
-        <form class="w-full" @submit.prevent="submit">
-          <ui-text-input v-model="searchInput" :disabled="processing || !socketConnected" :placeholder="$strings.MessagePodcastSearchField" text-size="sm" />
+      <!-- Search bar -->
+      <div class="px-4 pt-4 pb-2">
+        <form @submit.prevent="submit">
+          <div class="bg-secondary rounded-xl flex items-center px-4 py-3">
+            <span class="material-symbols text-lg text-fg-muted mr-3">search</span>
+            <input v-model="searchInput" :disabled="processing || !socketConnected" :placeholder="$strings.MessagePodcastSearchField" class="flex-grow bg-transparent text-sm text-fg placeholder-fg-muted outline-none" />
+          </div>
         </form>
       </div>
 
+      <!-- No connection -->
       <div v-if="!socketConnected" class="w-full text-center py-6">
-        <p class="text-lg text-error">{{ $strings.MessageNoNetworkConnection }}</p>
+        <span class="material-symbols text-3xl text-error mb-2">wifi_off</span>
+        <p class="text-sm text-error">{{ $strings.MessageNoNetworkConnection }}</p>
       </div>
-      <div v-else class="w-full mx-auto pb-2 overflow-y-auto overflow-x-hidden h-[calc(100%-85px)]">
-        <p v-if="termSearched && !results.length && !processing" class="text-center text-xl">{{ $strings.MessageNoPodcastsFound }}</p>
-        <template v-for="podcast in results">
-          <div :key="podcast.id" class="p-2 border-b border-fg border-opacity-10" @click="selectPodcast(podcast)">
-            <div class="flex">
-              <div class="w-8 min-w-8 py-1">
-                <div class="h-8 w-full bg-primary">
-                  <img v-if="podcast.cover" :src="podcast.cover" class="h-full w-full" />
-                </div>
-              </div>
-              <div class="flex-grow pl-2">
-                <p class="text-xs text-fg whitespace-nowrap truncate">{{ podcast.artistName }}</p>
-                <p class="text-xxs text-fg leading-5">{{ podcast.trackCount }} {{ $strings.HeaderEpisodes }}</p>
-              </div>
-            </div>
 
-            <p class="text-sm text-fg mb-1">{{ podcast.title }}</p>
-            <p class="text-xs text-fg-muted leading-5">{{ podcast.genres.join(', ') }}</p>
-          </div>
-        </template>
+      <!-- Results -->
+      <div v-else class="w-full pb-2 overflow-y-auto overflow-x-hidden h-[calc(100%-76px)]" style="-webkit-overflow-scrolling: touch">
+        <p v-if="termSearched && !results.length && !processing" class="text-center text-base text-fg-muted py-8">{{ $strings.MessageNoPodcastsFound }}</p>
+
+        <div v-if="results.length" class="bg-secondary rounded-xl mx-4 mb-4 overflow-hidden">
+          <template v-for="podcast in results">
+            <div :key="podcast.id" class="px-4 py-3 flex items-center border-b border-warm last:border-0" @click="selectPodcast(podcast)">
+              <div class="w-12 h-12 min-w-12 rounded-lg overflow-hidden bg-primary mr-3">
+                <img v-if="podcast.cover" :src="podcast.cover" class="h-full w-full object-cover" />
+              </div>
+              <div class="flex-grow min-w-0">
+                <p class="text-sm text-fg font-medium truncate">{{ podcast.title }}</p>
+                <p class="text-xs text-fg-muted truncate">{{ podcast.artistName }}</p>
+                <p class="text-xs text-fg-muted mt-0.5">{{ podcast.trackCount }} {{ $strings.HeaderEpisodes }} <span v-if="podcast.genres.length" class="text-fg-muted">&middot; {{ podcast.genres.join(', ') }}</span></p>
+              </div>
+              <span class="material-symbols text-lg text-fg-muted ml-2">chevron_right</span>
+            </div>
+          </template>
+        </div>
       </div>
     </template>
+
+    <!-- Selected podcast feed -->
     <template v-else>
-      <div class="flex items-center px-2 h-16">
+      <div class="flex items-center px-4 h-14">
         <div class="flex items-center" @click="clearSelected">
           <span class="material-symbols text-2xl text-fg-muted">arrow_back</span>
           <p class="pl-2 uppercase text-sm font-semibold text-fg-muted leading-4 pb-px">{{ $strings.ButtonBack }}</p>
         </div>
       </div>
 
-      <div class="w-full py-2 overflow-y-auto overflow-x-hidden h-[calc(100%-69px)]">
+      <div class="w-full py-2 overflow-y-auto overflow-x-hidden h-[calc(100%-56px)]" style="-webkit-overflow-scrolling: touch">
         <forms-new-podcast-form :podcast-data="selectedPodcast" :podcast-feed-data="selectedPodcastFeed" :processing.sync="processing" />
       </div>
     </template>
 
+    <!-- Processing overlay -->
     <div v-show="processing" class="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-25 z-40">
       <ui-loading-indicator />
     </div>

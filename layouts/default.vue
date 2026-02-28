@@ -1,10 +1,11 @@
 <template>
   <div class="w-full layout-wrapper bg-bg">
     <app-appbar />
-    <div id="content" class="overflow-hidden relative" :class="isPlayerOpen ? 'playerOpen' : ''">
+    <div id="content" class="overflow-hidden relative" :class="contentClasses">
       <Nuxt :key="currentLang" />
     </div>
     <app-audio-player-container ref="streamContainer" />
+    <app-bottom-nav :show="showBottomNav" :has-active-downloads="hasActiveDownloads" />
     <modals-libraries-modal />
     <modals-playlists-add-create-modal />
     <modals-select-local-folder-modal />
@@ -61,6 +62,27 @@ export default {
   computed: {
     isPlayerOpen() {
       return this.$store.getters['getIsPlayerOpen']
+    },
+    isPlayerFullscreen() {
+      return this.$store.state.playerIsFullscreen
+    },
+    isReaderOpen() {
+      return this.$store.state.showReader
+    },
+    isOnConnectPage() {
+      return this.$route.path === '/connect'
+    },
+    showBottomNav() {
+      return !this.isPlayerFullscreen && !this.isReaderOpen && !this.isOnConnectPage
+    },
+    hasActiveDownloads() {
+      return this.$store.state.globals.itemDownloads.length > 0
+    },
+    contentClasses() {
+      const classes = {}
+      if (this.isPlayerOpen) classes['playerOpen'] = true
+      if (this.showBottomNav) classes['hasBottomNav'] = true
+      return classes
     },
     routeName() {
       return this.$route.name

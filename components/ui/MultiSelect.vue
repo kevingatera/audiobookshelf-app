@@ -1,34 +1,34 @@
 <template>
   <div class="w-full">
-    <p class="px-1 text-sm font-semibold" :class="disabled ? 'text-gray-400' : ''">{{ label }}</p>
+    <p class="text-xs font-semibold uppercase tracking-wider mb-1" :class="disabled ? 'text-fg-muted/50' : 'text-fg-muted'">{{ label }}</p>
     <div ref="wrapper" class="relative">
       <form @submit.prevent="submitForm">
-        <div ref="inputWrapper" style="min-height: 36px" class="flex-wrap relative w-full shadow-sm flex items-center border border-gray-600 rounded px-2 py-1" :class="wrapperClass" @click.stop.prevent="clickWrapper" @mouseup.stop.prevent @mousedown.prevent>
-          <div v-for="item in selected" :key="item" class="rounded-full px-2 py-1 mx-0.5 my-0.5 text-xs bg-bg flex flex-nowrap break-all items-center relative">
-            <div v-if="!disabled" class="w-full h-full rounded-full absolute top-0 left-0 px-1 bg-bg bg-opacity-75 flex items-center justify-end opacity-0 hover:opacity-100">
-              <span v-if="showEdit" class="material-symbols text-white hover:text-warning cursor-pointer" style="font-size: 1.1rem" @click.stop="editItem(item)">edit</span>
-              <span class="material-symbols text-white hover:text-error cursor-pointer" style="font-size: 1.1rem" @click.stop="removeItem(item)">close</span>
+        <div ref="inputWrapper" style="min-height: 40px" class="flex-wrap relative w-full flex items-center border border-warm rounded-lg px-2 py-1 transition-all duration-150" :class="wrapperClass" @click.stop.prevent="clickWrapper" @mouseup.stop.prevent @mousedown.prevent>
+          <div v-for="item in selected" :key="item" class="rounded-full px-3 py-1 mx-0.5 my-0.5 text-xs font-medium flex flex-nowrap break-all items-center relative" style="background: rgba(26, 214, 145, 0.15); color: #1ad691">
+            <div v-if="!disabled" class="w-full h-full rounded-full absolute top-0 left-0 px-1 flex items-center justify-end opacity-0 hover:opacity-100" style="background: rgba(26, 214, 145, 0.25)">
+              <span v-if="showEdit" class="material-symbols hover:text-warning cursor-pointer" style="font-size: 1.1rem; color: #1ad691" @click.stop="editItem(item)">edit</span>
+              <span class="material-symbols hover:text-error cursor-pointer" style="font-size: 1.1rem; color: #1ad691" @click.stop="removeItem(item)">close</span>
             </div>
             {{ item }}
           </div>
-          <input v-show="!readonly" ref="input" v-model="textInput" :disabled="disabled" style="min-width: 40px; width: 40px" class="h-full bg-primary focus:outline-none px-1" @keydown="keydownInput" @focus="inputFocus" @blur="inputBlur" />
+          <input v-show="!readonly" ref="input" v-model="textInput" :disabled="disabled" style="min-width: 40px; width: 40px" class="h-full bg-primary focus:outline-none px-1 text-fg text-sm" @keydown="keydownInput" @focus="inputFocus" @blur="inputBlur" />
         </div>
       </form>
 
-      <ul ref="menu" v-show="showMenu" class="absolute z-50 mt-1 w-full bg-bg border border-gray-600 shadow-lg max-h-56 rounded-md py-1 ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none text-sm" role="listbox" aria-labelledby="listbox-label">
+      <ul ref="menu" v-show="showMenu" class="absolute z-50 mt-1 w-full bg-secondary border border-warm rounded-xl shadow-lg max-h-56 py-1 overflow-auto focus:outline-none text-sm" role="listbox" aria-labelledby="listbox-label">
         <template v-for="item in itemsToShow">
-          <li :key="item" class="text-gray-50 select-none relative py-2 pr-9 cursor-pointer" role="option" @click="clickedOption($event, item)" @mouseup.stop.prevent @mousedown.prevent>
+          <li :key="item" class="text-fg select-none relative py-3 px-4 pr-9 cursor-pointer transition-colors duration-150 hover:bg-bg-hover" role="option" @click="clickedOption($event, item)" @mouseup.stop.prevent @mousedown.prevent>
             <div class="flex items-center">
-              <span class="font-normal ml-3 block truncate">{{ item }}</span>
+              <span class="font-normal block truncate text-sm">{{ item }}</span>
             </div>
-            <span v-if="selected.includes(item)" class="text-yellow-400 absolute inset-y-0 right-0 flex items-center pr-4">
-              <span class="material-symbols text-xl">checkmark</span>
+            <span v-if="selected.includes(item)" class="absolute inset-y-0 right-0 flex items-center pr-4" style="color: #1ad691">
+              <span class="material-symbols text-xl">check</span>
             </span>
           </li>
         </template>
-        <li v-if="!itemsToShow.length" class="text-gray-50 select-none relative py-2 pr-9" role="option">
+        <li v-if="!itemsToShow.length" class="text-fg-muted select-none relative py-3 px-4" role="option">
           <div class="flex items-center justify-center">
-            <span class="font-normal">No Items</span>
+            <span class="font-normal text-sm">No Items</span>
           </div>
         </li>
       </ul>
@@ -81,8 +81,9 @@ export default {
     },
     wrapperClass() {
       var classes = []
-      if (this.disabled) classes.push('bg-black-300')
+      if (this.disabled) classes.push('bg-primary opacity-60 cursor-not-allowed')
       else classes.push('bg-primary')
+      if (this.isFocused) classes.push('border-accent ring-1 ring-accent/50')
       if (!this.readonly) classes.push('cursor-text')
       return classes.join(' ')
     },
@@ -255,7 +256,7 @@ input {
   border-style: inherit !important;
 }
 input:read-only {
-  color: #aaa;
-  background-color: #444;
+  color: rgb(var(--color-fg-muted));
+  background-color: rgb(var(--color-primary));
 }
 </style>

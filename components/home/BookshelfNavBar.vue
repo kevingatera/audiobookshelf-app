@@ -1,3 +1,4 @@
+<!-- DEPRECATED: Navigation moved to BottomNav.vue. Kept for legacy classic shelf mode. -->
 <template>
   <div class="w-full h-9 bg-bg relative">
     <div id="bookshelf-navbar" class="absolute z-10 top-0 left-0 w-full h-full flex bg-secondary">

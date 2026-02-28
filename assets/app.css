@@ -17,6 +17,7 @@ textarea {
   user-select: auto;
 }
 
+/* ── Layout shell ── */
 .layout-wrapper {
   height: calc(100vh - env(safe-area-inset-top));
   min-height: calc(100vh - env(safe-area-inset-top));
@@ -25,15 +26,28 @@ textarea {
 }
 
 #content {
-  height: calc(100% - 64px);
-  min-height: calc(100% - 64px);
-  max-height: calc(100% - 64px);
+  height: calc(100% - 48px);
+  min-height: calc(100% - 48px);
+  max-height: calc(100% - 48px);
+}
+
+/* When bottom nav is visible, subtract its height too */
+#content.hasBottomNav {
+  height: calc(100% - 48px - 56px);
+  min-height: calc(100% - 48px - 56px);
+  max-height: calc(100% - 48px - 56px);
 }
 
 #content.playerOpen {
-  height: calc(100% - 184px);
-  min-height: calc(100% - 184px);
-  max-height: calc(100% - 184px);
+  height: calc(100% - 48px - 64px);
+  min-height: calc(100% - 48px - 64px);
+  max-height: calc(100% - 48px - 64px);
+}
+
+#content.playerOpen.hasBottomNav {
+  height: calc(100% - 48px - 64px - 56px);
+  min-height: calc(100% - 48px - 64px - 56px);
+  max-height: calc(100% - 48px - 64px - 56px);
 }
 
 #bookshelf {
@@ -41,34 +55,36 @@ textarea {
   min-height: calc(100% - 48px);
 }
 
+/* ── Shadows (warm-tinted) ── */
 .box-shadow-sm {
-  box-shadow: 0px 3px 6px #11111170;
+  box-shadow: 0px 2px 4px rgba(18, 16, 14, 0.35);
 }
 
 .box-shadow-md {
-  box-shadow: 2px 8px 6px #111111aa;
+  box-shadow: 0px 4px 12px rgba(18, 16, 14, 0.4);
 }
 
 .box-shadow-lg-up {
-  box-shadow: 0px -12px 8px #111111ee;
+  box-shadow: 0px -8px 16px rgba(18, 16, 14, 0.5);
 }
 
 .box-shadow-xl {
-  box-shadow: 2px 14px 8px #111111aa;
+  box-shadow: 0px 8px 24px rgba(18, 16, 14, 0.5);
 }
 
 .box-shadow-book {
-  box-shadow: 4px 1px 8px #11111166, -4px 1px 8px #11111166, 1px -4px 8px #11111166;
+  box-shadow: 0px 2px 8px rgba(18, 16, 14, 0.3), 0px 1px 3px rgba(18, 16, 14, 0.2);
 }
 
 .box-shadow-progressbar {
-  box-shadow: 0px -1px 4px rgb(62, 50, 2, 0.5);
+  box-shadow: 0px -1px 4px rgba(62, 50, 2, 0.3);
 }
 
 .shadow-height {
   height: calc(100% - 4px);
 }
 
+/* ── Bookshelf (classic / legacy) ── */
 .bookshelfRow {
   background-image: url(/wood_panels.jpg);
 }
@@ -80,14 +96,11 @@ textarea {
 }
 
 .altBookshelfDivider {
-  background: rgb(38 38 38);
-  /*background: linear-gradient(180deg, rgba(191, 193, 195, 1) 0%, rgb(156, 158, 159) 17%, rgb(114, 115, 117) 88%, rgb(120, 120, 122) 100%);*/
-  box-shadow: 2px 10px 8px #1111117e;
+  background: rgb(28, 26, 24);
+  box-shadow: 0px 4px 12px rgba(18, 16, 14, 0.4);
 }
 
-/*
-Bookshelf Label
-*/
+/* ── Bookshelf labels ── */
 .categoryPlacard {
   letter-spacing: 1px;
 }
@@ -108,6 +121,7 @@ Bookshelf Label
   color: #ffffff;
 }
 
+/* ── Cover blur background ── */
 .cover-bg {
   width: calc(100% + 40px);
   height: calc(100% + 40px);
@@ -119,17 +133,15 @@ Bookshelf Label
   filter: blur(20px);
 }
 
+/* ── Text clamp utilities ── */
 .episode-subtitle {
   word-break: break-word;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
   line-height: 16px;
-  /* fallback */
   max-height: 32px;
-  /* fallback */
   -webkit-line-clamp: 2;
-  /* number of lines to show */
   -webkit-box-orient: vertical;
 }
 
@@ -147,6 +159,7 @@ Bookshelf Label
   -webkit-line-clamp: 4;
 }
 
+/* ── Tracks table ── */
 .tracksTable {
   border-collapse: collapse;
   width: 100%;
@@ -168,4 +181,130 @@ Bookshelf Label
 .tracksTable th {
   padding: 4px 8px;
   font-size: 0.75rem;
+}
+
+/* ── Bottom sheet ── */
+.bottom-sheet-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 49;
+  opacity: 0;
+  transition: opacity 250ms cubic-bezier(0.33, 1, 0.68, 1);
+  pointer-events: none;
+}
+
+.bottom-sheet-scrim.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.bottom-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background-color: rgb(var(--color-secondary));
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  max-height: 85vh;
+  transform: translateY(100%);
+  transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+  overflow: hidden;
+}
+
+.bottom-sheet.open {
+  transform: translateY(0);
+}
+
+.bottom-sheet-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgb(var(--color-fg) / 0.2);
+  margin: 8px auto 4px;
+}
+
+/* ── Bottom navigation ── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  z-index: 40;
+  background-color: rgb(var(--color-secondary));
+  border-top: 1px solid rgb(var(--color-border) / var(--color-border-opacity));
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  height: 100%;
+  gap: 2px;
+  color: rgb(var(--color-fg-muted));
+  transition: color 150ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bottom-nav-item.active {
+  color: #1ad691;
+}
+
+.bottom-nav-item .nav-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* ── Mini player (slim) ── */
+.mini-player {
+  height: 64px;
+  background-color: rgb(var(--color-secondary));
+  border-top: 1px solid rgb(var(--color-border) / var(--color-border-opacity));
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.mini-player-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background-color: #1ad691;
+  border-radius: 1px;
+  transition: width 1s linear;
+}
+
+/* ── Utility: warm border with opacity ── */
+.border-warm {
+  border-color: rgb(var(--color-border) / var(--color-border-opacity));
+}
+
+.border-warm-emphasis {
+  border-color: rgb(var(--color-border) / calc(var(--color-border-opacity) * 1.5));
+}
+
+/* ── Utility: hide scrollbar ── */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }

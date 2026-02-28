@@ -144,6 +144,24 @@ class LocalStorage {
     }
   }
 
+  async getClassicShelfMode() {
+    try {
+      const val = await Preferences.get({ key: 'classicShelfMode' })
+      return val.value === 'true'
+    } catch (error) {
+      console.error('[LocalStorage] Failed to get classicShelfMode', error)
+      return false
+    }
+  }
+
+  async setClassicShelfMode(val) {
+    try {
+      await Preferences.set({ key: 'classicShelfMode', value: val ? 'true' : 'false' })
+    } catch (error) {
+      console.error('[LocalStorage] Failed to set classicShelfMode', error)
+    }
+  }
+
   /**
    * Get preference value by key
    * 

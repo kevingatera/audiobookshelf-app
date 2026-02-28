@@ -1,36 +1,50 @@
 <template>
-  <div class="w-full h-full py-6">
-    <div class="flex items-center mb-2">
-      <h1 class="text-base font-semibold px-2">
-        {{ $strings.HeaderLocalFolders }}
-      </h1>
-      <button type="button" class="material-symbols text-xl" @click.stop="showLocalFolderMoreInfo">info</button>
+  <div class="w-full h-full bg-bg">
+    <!-- Section header -->
+    <div class="flex items-center px-4 pt-6 pb-2">
+      <p class="text-xs font-semibold text-fg-muted uppercase tracking-wider">{{ $strings.HeaderLocalFolders }}</p>
+      <button type="button" class="material-symbols text-base text-fg-muted ml-2" @click.stop="showLocalFolderMoreInfo">info</button>
     </div>
 
-    <div v-if="!isIos" class="w-full max-w-full px-2 py-2">
-      <template v-for="folder in localFolders">
-        <nuxt-link :to="`/localMedia/folders/${folder.id}`" :key="folder.id" class="flex items-center px-2 py-4 bg-primary rounded-md border-bg mb-1">
-          <span class="material-symbols fill text-xl text-yellow-400">folder</span>
-          <p class="ml-2">{{ folder.name }}</p>
-          <div class="flex-grow" />
-          <p class="text-sm italic text-fg-muted px-3 capitalize">{{ folder.mediaType }}s</p>
-          <span class="material-symbols text-xl text-fg-muted">arrow_right</span>
-        </nuxt-link>
-      </template>
-      <div v-if="!localFolders.length" class="flex justify-center">
-        <p class="text-center">{{ $strings.MessageNoMediaFolders }}</p>
+    <div v-if="!isIos">
+      <!-- Folders list -->
+      <div v-if="localFolders.length" class="bg-secondary rounded-xl mx-4 mb-4 overflow-hidden">
+        <template v-for="folder in localFolders">
+          <nuxt-link :to="`/localMedia/folders/${folder.id}`" :key="folder.id" class="flex items-center px-4 py-3 border-b border-warm last:border-0">
+            <span class="material-symbols fill text-xl text-yellow-400">folder</span>
+            <div class="flex-grow ml-3 min-w-0">
+              <p class="text-sm text-fg truncate">{{ folder.name }}</p>
+              <p class="text-xs text-fg-muted mt-0.5 capitalize">{{ folder.mediaType }}s</p>
+            </div>
+            <span class="material-symbols text-lg text-fg-muted ml-2">chevron_right</span>
+          </nuxt-link>
+        </template>
       </div>
-      <div v-if="!isAndroid10OrBelow || overrideFolderRestriction" class="flex border-t border-fg/10 my-4 py-4">
-        <div class="flex-grow pr-1">
-          <ui-dropdown v-model="newFolderMediaType" :placeholder="$strings.LabelSelectMediaType" :items="mediaTypeItems" />
+
+      <!-- Empty state -->
+      <div v-if="!localFolders.length" class="mx-4 mb-4">
+        <div class="bg-secondary rounded-xl px-6 py-8 text-center">
+          <span class="material-symbols text-3xl text-fg-muted mb-2">folder_off</span>
+          <p class="text-sm text-fg-muted">{{ $strings.MessageNoMediaFolders }}</p>
         </div>
-        <ui-btn small class="w-28" color="success" @click="selectFolder">{{ $strings.ButtonNewFolder }}</ui-btn>
       </div>
-      <div v-else class="flex border-t border-fg/10 my-4 py-4">
-        <div class="flex-grow pr-1">
-          <p class="text-sm">{{ $strings.MessageAndroid10Downloads }}</p>
+
+      <!-- Add new folder -->
+      <div v-if="!isAndroid10OrBelow || overrideFolderRestriction" class="mx-4 mb-4">
+        <div class="bg-secondary rounded-xl px-4 py-3 flex items-center">
+          <div class="flex-grow pr-2">
+            <ui-dropdown v-model="newFolderMediaType" :placeholder="$strings.LabelSelectMediaType" :items="mediaTypeItems" />
+          </div>
+          <ui-btn small class="w-28" color="success" @click="selectFolder">{{ $strings.ButtonNewFolder }}</ui-btn>
         </div>
-        <ui-btn small class="w-28" color="primary" @click="overrideFolderRestriction = true">{{ $strings.ButtonOverride }}</ui-btn>
+      </div>
+      <div v-else class="mx-4 mb-4">
+        <div class="bg-secondary rounded-xl px-4 py-3 flex items-center">
+          <div class="flex-grow pr-2">
+            <p class="text-sm text-fg-muted">{{ $strings.MessageAndroid10Downloads }}</p>
+          </div>
+          <ui-btn small class="w-28" color="primary" @click="overrideFolderRestriction = true">{{ $strings.ButtonOverride }}</ui-btn>
+        </div>
       </div>
     </div>
   </div>

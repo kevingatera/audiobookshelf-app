@@ -1,25 +1,35 @@
 <template>
   <div class="w-full h-full">
-    <div class="w-full h-full overflow-y-auto py-6 md:p-8">
-      <div class="w-full flex justify-center">
-        <covers-playlist-cover :items="playlistItems" :width="180" :height="180" />
+    <div class="w-full h-full overflow-y-auto pb-4" style="-webkit-overflow-scrolling: touch">
+      <!-- Cover -->
+      <div class="w-full flex justify-center pt-6 pb-4">
+        <div class="rounded-xl overflow-hidden shadow-lg">
+          <covers-playlist-cover :items="playlistItems" :width="180" :height="180" />
+        </div>
       </div>
-      <div class="flex-grow px-1 py-6">
-        <div class="flex items-center px-3">
-          <h1 class="text-xl font-sans">
+
+      <!-- Title + Play button -->
+      <div class="px-4 pb-2">
+        <div class="flex items-center justify-between">
+          <h1 class="text-xl font-semibold text-fg flex-grow">
             {{ playlistName }}
           </h1>
-          <div class="flex-grow" />
-          <ui-btn v-if="showPlayButton" color="success" :padding-x="4" :loading="playerIsStartingForThisMedia" small class="flex items-center justify-center mx-1 w-24" @click="playClick">
+          <ui-btn v-if="showPlayButton" color="success" :padding-x="4" :loading="playerIsStartingForThisMedia" small class="flex items-center justify-center ml-3 w-24 flex-shrink-0" @click="playClick">
             <span class="material-symbols text-2xl fill">{{ playerIsPlaying ? 'pause' : 'play_arrow' }}</span>
             <span class="px-1 text-sm">{{ playerIsPlaying ? $strings.ButtonPause : $strings.ButtonPlay }}</span>
           </ui-btn>
         </div>
+      </div>
 
-        <div class="my-8 max-w-2xl px-3">
-          <p class="text-base text-fg">{{ description }}</p>
+      <!-- Description -->
+      <div v-if="description" class="px-4 pb-4">
+        <div class="bg-secondary rounded-xl p-4">
+          <p class="text-sm text-fg">{{ description }}</p>
         </div>
+      </div>
 
+      <!-- Playlist items -->
+      <div class="px-4">
         <tables-playlist-items-table :items="playlistItems" :playlist-id="playlist.id" @showMore="showMore" />
       </div>
     </div>

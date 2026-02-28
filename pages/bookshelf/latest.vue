@@ -1,10 +1,12 @@
 <template>
-  <div class="w-full p-4">
-    <h1 class="text-xl mb-2 font-semibold">{{ $strings.HeaderLatestEpisodes }}</h1>
+  <div class="w-full bg-bg min-h-full">
+    <p class="text-xs font-semibold text-fg-muted uppercase tracking-wider px-4 pt-6 pb-2">{{ $strings.HeaderLatestEpisodes }}</p>
 
-    <template v-for="episode in recentEpisodes">
-      <tables-podcast-latest-episode-row :episode="episode" :local-episode="localEpisodeMap[episode.id]" :library-item-id="episode.libraryItemId" :local-library-item-id="localEpisodeMap[episode.id]?.localLibraryItemId" :key="episode.id" @addToPlaylist="addEpisodeToPlaylist" />
-    </template>
+    <div class="bg-secondary rounded-xl mx-4 mb-4 overflow-hidden">
+      <template v-for="episode in recentEpisodes">
+        <tables-podcast-latest-episode-row :episode="episode" :local-episode="localEpisodeMap[episode.id]" :library-item-id="episode.libraryItemId" :local-library-item-id="localEpisodeMap[episode.id]?.localLibraryItemId" :key="episode.id" @addToPlaylist="addEpisodeToPlaylist" />
+      </template>
+    </div>
   </div>
 </template>
 

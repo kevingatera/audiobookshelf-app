@@ -1,33 +1,46 @@
 <template>
-  <div class="w-full h-full py-4">
-    <div class="flex items-center mb-2 space-x-2 px-4">
-      <p class="text-lg font-bold">{{ $strings.ButtonLogs }}</p>
-      <ui-icon-btn outlined borderless :icon="isCopied ? 'check' : 'content_copy'" @click="copyToClipboard" />
-      <ui-icon-btn outlined borderless icon="share" @click="shareLogs" />
-      <div class="flex-grow"></div>
-      <ui-icon-btn outlined borderless icon="more_vert" @click="showDialog = true" />
-    </div>
-
-    <div class="w-full h-[calc(100%-40px)] overflow-y-auto relative" ref="logContainer">
-      <div v-if="!logs.length && !isLoading" class="flex items-center justify-center h-32 p-4">
-        <p class="text-gray-400">{{ $strings.MessageNoLogs }}</p>
-      </div>
-      <div v-if="hasScrolled" class="sticky top-0 left-0 w-full h-10 bg-gradient-to-t from-transparent to-bg z-10 pointer-events-none"></div>
-
-      <div v-for="(log, index) in logs" :key="log.id" class="py-2 px-4" :class="{ 'bg-white/5': index % 2 === 0 }">
-        <div class="flex items-center space-x-4 mb-1">
-          <div class="text-xs uppercase font-bold" :class="{ 'text-error': log.level === 'error', 'text-blue-500': log.level === 'info' }">{{ log.level }}</div>
-          <div class="text-xs text-gray-400">{{ formatEpochToDatetimeString(log.timestamp) }}</div>
-          <div class="flex-grow"></div>
-          <div class="text-xs text-gray-400">{{ log.tag }}</div>
+  <div class="w-full h-full overflow-hidden" style="-webkit-overflow-scrolling: touch">
+    <!-- Log card -->
+    <div class="bg-secondary rounded-xl mx-4 mt-4 overflow-hidden flex flex-col" style="max-height: calc(100% - 2rem)">
+      <!-- Header -->
+      <div class="px-4 py-3 flex items-center justify-between border-b border-warm flex-shrink-0">
+        <p class="text-base font-semibold text-fg">{{ $strings.ButtonLogs }}</p>
+        <div class="flex items-center gap-2">
+          <ui-icon-btn outlined borderless :icon="isCopied ? 'check' : 'content_copy'" @click="copyToClipboard" />
+          <ui-icon-btn outlined borderless icon="share" @click="shareLogs" />
+          <ui-icon-btn outlined borderless icon="more_vert" @click="showDialog = true" />
         </div>
-        <div class="text-xs break-words">{{ maskServerAddress ? log.maskedMessage : log.message }}</div>
+      </div>
+
+      <!-- Log entries -->
+      <div class="overflow-y-auto flex-grow" ref="logContainer" style="-webkit-overflow-scrolling: touch">
+        <div v-if="!logs.length && !isLoading" class="flex items-center justify-center h-32 p-4">
+          <p class="text-fg-muted text-sm">{{ $strings.MessageNoLogs }}</p>
+        </div>
+
+        <div v-for="(log, index) in logs" :key="log.id" class="px-4 py-2 font-mono text-xs border-b border-warm last:border-0">
+          <div class="flex items-center gap-3 mb-0.5">
+            <div
+              class="uppercase font-bold text-xxs"
+              :class="{
+                'text-error': log.level === 'error',
+                'text-warning': log.level === 'warn' || log.level === 'warning',
+                'text-fg-muted': log.level === 'info' || log.level === 'debug'
+              }"
+            >{{ log.level }}</div>
+            <div class="text-xxs text-fg-muted">{{ formatEpochToDatetimeString(log.timestamp) }}</div>
+            <div class="flex-grow"></div>
+            <div class="text-xxs text-fg-muted">{{ log.tag }}</div>
+          </div>
+          <div class="break-words text-fg/80">{{ maskServerAddress ? log.maskedMessage : log.message }}</div>
+        </div>
       </div>
     </div>
 
     <modals-dialog v-model="showDialog" :items="dialogItems" @action="dialogAction" />
   </div>
 </template>
+
 <script>
 import { AbsLogger } from '@/plugins/capacitor'
 import { FileSharer } from '@webnativellc/capacitor-filesharer'
@@ -70,6 +83,11 @@ export default {
         this.maskServerAddress = !this.maskServerAddress
       }
       this.showDialog = false
+    },
+    clearLogs() {
+      AbsLogger.clearLogs().then(() => {
+        this.logs = []
+      })
     },
     toggleMaskServerAddress() {
       this.maskServerAddress = !this.maskServerAddress
@@ -172,4 +190,3 @@ export default {
   }
 }
 </script>
-

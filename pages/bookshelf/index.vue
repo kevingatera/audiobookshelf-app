@@ -1,36 +1,44 @@
 <template>
-  <div class="w-full h-full min-h-full relative">
-    <div v-if="attemptingConnection" class="w-full pt-4 flex items-center justify-center">
+  <div class="w-full h-full min-h-full relative bg-bg">
+    <!-- Connection status banner -->
+    <div v-if="attemptingConnection" class="mx-4 mt-4 bg-secondary rounded-xl px-4 py-3 flex items-center">
       <widgets-loading-spinner />
-      <p class="pl-4">{{ $strings.MessageAttemptingServerConnection }}</p>
+      <p class="pl-3 text-sm text-fg">{{ $strings.MessageAttemptingServerConnection }}</p>
     </div>
-    <div v-if="shelves.length && isLoading" class="w-full pt-4 flex items-center justify-center">
+    <div v-if="shelves.length && isLoading" class="mx-4 mt-4 bg-secondary rounded-xl px-4 py-3 flex items-center">
       <widgets-loading-spinner />
-      <p class="pl-4">{{ $strings.MessageLoadingServerData }}</p>
+      <p class="pl-3 text-sm text-fg">{{ $strings.MessageLoadingServerData }}</p>
     </div>
 
+    <!-- Shelves -->
     <div class="w-full" :class="{ 'py-6': altViewEnabled }">
       <template v-for="(shelf, index) in shelves">
         <bookshelf-shelf :key="shelf.id" :label="getShelfLabel(shelf)" :entities="shelf.entities" :type="shelf.type" :style="{ zIndex: shelves.length - index }" />
       </template>
     </div>
 
+    <!-- Empty state -->
     <div v-if="!shelves.length && !isLoading" class="absolute top-0 left-0 w-full h-full flex items-center justify-center">
-      <div>
-        <p class="mb-4 text-center text-xl">
-          {{ $strings.MessageBookshelfEmpty }}
-        </p>
-        <div class="w-full" v-if="!user">
-          <div class="flex justify-center items-center mb-3">
-            <span class="material-symbols text-error text-lg">cloud_off</span>
-            <p class="pl-2 text-error text-sm">{{ $strings.MessageAudiobookshelfServerNotConnected }}</p>
+      <div class="px-6">
+        <div class="bg-secondary rounded-xl px-6 py-8 text-center">
+          <span class="material-symbols text-4xl text-fg-muted mb-3">shelves</span>
+          <p class="mb-4 text-center text-lg text-fg">
+            {{ $strings.MessageBookshelfEmpty }}
+          </p>
+          <div class="w-full" v-if="!user">
+            <div class="flex justify-center items-center mb-4">
+              <span class="material-symbols text-error text-lg">cloud_off</span>
+              <p class="pl-2 text-error text-sm">{{ $strings.MessageAudiobookshelfServerNotConnected }}</p>
+            </div>
           </div>
-        </div>
-        <div class="flex justify-center">
-          <ui-btn v-if="!user" small @click="$router.push('/connect')" class="w-32">{{ $strings.ButtonConnect }}</ui-btn>
+          <div class="flex justify-center">
+            <ui-btn v-if="!user" small @click="$router.push('/connect')" class="w-32">{{ $strings.ButtonConnect }}</ui-btn>
+          </div>
         </div>
       </div>
     </div>
+
+    <!-- Loading state -->
     <div v-else-if="!shelves.length && isLoading && !attemptingConnection" class="absolute top-0 left-0 z-50 w-full h-full flex items-center justify-center">
       <ui-loading-indicator :text="$strings.MessageLoading" />
     </div>

@@ -17,9 +17,9 @@
 
     <div v-if="playerSettings.useChapterTrack && playerSettings.useTotalTrack && showFullscreen" class="absolute total-track w-full z-30 px-6">
       <div class="flex">
-        <p class="font-mono text-fg" style="font-size: 0.8rem">{{ currentTimePretty }}</p>
+        <p class="font-mono text-xs text-fg-muted">{{ currentTimePretty }}</p>
         <div class="flex-grow" />
-        <p class="font-mono text-fg" style="font-size: 0.8rem">{{ totalTimeRemainingPretty }}</p>
+        <p class="font-mono text-xs text-fg-muted">{{ totalTimeRemainingPretty }}</p>
       </div>
       <div class="w-full">
         <div class="h-1 w-full bg-track/50 relative rounded-full">
@@ -40,6 +40,28 @@
       </div>
     </div>
 
+    <!-- Minimized mini-player layout -->
+    <div v-if="!showFullscreen" class="mini-player-row absolute z-30 bottom-0 left-0 right-0 pointer-events-auto" :style="miniPlayerTintStyle" @click="clickContainer">
+      <div class="flex items-center gap-3 px-3 h-16 w-full">
+        <!-- Cover art 48x48 -->
+        <div class="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden">
+          <covers-book-cover v-if="libraryItem || localLibraryItemCoverSrc" :library-item="libraryItem" :download-cover="localLibraryItemCoverSrc" :width="48 / bookCoverAspectRatio" :book-cover-aspect-ratio="bookCoverAspectRatio" raw />
+        </div>
+        <!-- Title + Author -->
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-semibold text-fg truncate">{{ miniPlayerTitle }}</p>
+          <p class="text-xs text-fg-muted truncate">{{ authorName }}</p>
+        </div>
+        <!-- Play/Pause 44x44 touch target -->
+        <button class="flex-shrink-0 flex items-center justify-center" style="width: 44px; height: 44px" @click.stop="playPauseClick">
+          <span v-if="!isLoading" class="material-symbols fill text-fg" style="font-size: 2rem">{{ !isPlaying ? 'play_arrow' : 'pause' }}</span>
+          <widgets-spinner-icon v-else class="h-6 w-6" />
+        </button>
+      </div>
+      <!-- Mini-player progress bar -->
+      <div class="mini-player-progress" :style="{ width: miniPlayerProgressPercent + '%' }" />
+    </div>
+
     <div class="title-author-texts absolute z-30 left-0 right-0 overflow-hidden" @click="clickTitleAndAuthor">
       <div ref="titlewrapper" class="overflow-hidden relative">
         <p class="title-text whitespace-nowrap"></p>
@@ -47,25 +69,25 @@
       <p class="author-text text-fg text-opacity-75 truncate">{{ authorName }}</p>
     </div>
 
-    <div id="playerContent" class="playerContainer w-full z-20 absolute bottom-0 left-0 right-0 p-2 pointer-events-auto transition-all" :style="{ backgroundColor: showFullscreen ? '' : coverRgb }" @click="clickContainer">
+    <div id="playerContent" class="playerContainer w-full z-20 absolute bottom-0 left-0 right-0 p-2 pointer-events-auto transition-all" :style="{ backgroundColor: showFullscreen ? '' : 'transparent' }" @click="clickContainer">
       <div v-if="showFullscreen" class="absolute bottom-4 left-0 right-0 w-full pb-4 pt-2 mx-auto px-6" style="max-width: 414px">
         <div class="flex items-center justify-between pointer-events-auto">
-          <span v-if="!isPodcast && serverLibraryItemId && socketConnected" class="material-symbols text-3xl text-fg-muted cursor-pointer" :class="{ fill: bookmarks.length }" @click="$emit('showBookmarks')">bookmark</span>
+          <span v-if="!isPodcast && serverLibraryItemId && socketConnected" class="material-symbols text-3xl cursor-pointer rounded-full p-2" :class="[bookmarks.length ? 'fill text-fg-muted' : 'text-fg-muted', 'hover:bg-fg/10']" style="background: rgba(var(--color-bg), 0.3)" @click="$emit('showBookmarks')">bookmark</span>
           <!-- hidden for podcasts but still using this as a placeholder -->
           <span v-else class="material-symbols text-3xl text-white text-opacity-0">bookmark</span>
 
-          <span class="font-mono text-fg-muted cursor-pointer" style="font-size: 1.35rem" @click="$emit('selectPlaybackSpeed')">{{ currentPlaybackRate }}x</span>
-          <svg v-if="!sleepTimerRunning" xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-fg-muted cursor-pointer" fill="none" viewBox="0 0 24 24" stroke="currentColor" @click.stop="$emit('showSleepTimer')">
+          <span class="font-mono text-fg-muted cursor-pointer rounded-full p-2" style="font-size: 1.35rem; background: rgba(var(--color-bg), 0.3)" @click="$emit('selectPlaybackSpeed')">{{ currentPlaybackRate }}x</span>
+          <svg v-if="!sleepTimerRunning" xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-fg-muted cursor-pointer rounded-full p-1" style="width: 36px; height: 36px; background: rgba(var(--color-bg), 0.3)" fill="none" viewBox="0 0 24 24" stroke="currentColor" @click.stop="$emit('showSleepTimer')">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
           </svg>
-          <div v-else class="h-7 w-7 flex items-center justify-around cursor-pointer" @click.stop="$emit('showSleepTimer')">
+          <div v-else class="flex items-center justify-around cursor-pointer rounded-full p-2" style="background: rgba(var(--color-bg), 0.3)" @click.stop="$emit('showSleepTimer')">
             <p class="text-xl font-mono text-success">{{ sleepTimeRemainingPretty }}</p>
           </div>
 
-          <span class="material-symbols text-3xl text-fg cursor-pointer" :class="chapters.length ? 'text-opacity-75' : 'text-opacity-10'" @click="clickChaptersBtn">format_list_bulleted</span>
+          <span class="material-symbols text-3xl text-fg cursor-pointer rounded-full p-2" :class="chapters.length ? 'text-opacity-75' : 'text-opacity-10'" style="background: rgba(var(--color-bg), 0.3)" @click="clickChaptersBtn">format_list_bulleted</span>
         </div>
       </div>
-      <div v-else class="w-full h-full absolute top-0 left-0 pointer-events-none" style="background: var(--gradient-minimized-audio-player)" />
+      <div v-if="showFullscreen" class="w-full h-full absolute top-0 left-0 pointer-events-none" style="background: var(--gradient-minimized-audio-player); opacity: 0" />
 
       <div id="playerControls" class="absolute right-0 bottom-0 mx-auto" style="max-width: 414px">
         <div class="flex items-center max-w-full" :class="playerSettings.lockUi ? 'justify-center' : 'justify-between'">
@@ -90,14 +112,14 @@
 
       <div id="playerTrack" class="absolute left-0 w-full px-6">
         <div class="flex pointer-events-none">
-          <p class="font-mono text-fg" style="font-size: 0.8rem" ref="currentTimestamp">0:00</p>
+          <p class="font-mono text-xs text-fg-muted" ref="currentTimestamp">0:00</p>
           <div class="flex-grow" />
-          <p class="font-mono text-fg" style="font-size: 0.8rem">{{ timeRemainingPretty }}</p>
+          <p class="font-mono text-xs text-fg-muted">{{ timeRemainingPretty }}</p>
         </div>
-        <div ref="track" class="h-1.5 w-full bg-track/50 relative rounded-full" :class="{ 'animate-pulse': isLoading }" @click.stop>
+        <div ref="track" class="scrubber-track w-full bg-track/50 relative rounded-full" :class="{ 'animate-pulse': isLoading }" @click.stop>
           <div ref="readyTrack" class="h-full bg-track-buffered absolute top-0 left-0 rounded-full pointer-events-none" />
           <div ref="bufferedTrack" class="h-full bg-track absolute top-0 left-0 rounded-full pointer-events-none" />
-          <div ref="playedTrack" class="h-full bg-track-cursor absolute top-0 left-0 rounded-full pointer-events-none" />
+          <div ref="playedTrack" class="h-full absolute top-0 left-0 rounded-full pointer-events-none" style="background-color: #1ad691" />
           <div ref="trackCursor" class="h-7 w-7 rounded-full absolute pointer-events-auto flex items-center justify-center" :style="{ top: '-11px' }" :class="{ 'opacity-0': playerSettings.lockUi || !showFullscreen }" @touchstart="touchstartCursor">
             <div class="bg-track-cursor rounded-full w-3.5 h-3.5 pointer-events-none" />
           </div>
@@ -392,6 +414,19 @@ export default {
       if (!localLibraryItem) return null
 
       return this.playbackSession.localEpisodeId ? `${localLibraryItem.id}-${this.playbackSession.localEpisodeId}` : localLibraryItem.id
+    },
+    miniPlayerTitle() {
+      return this.playbackSession?.displayTitle || this.mediaMetadata?.title || 'Title'
+    },
+    miniPlayerProgressPercent() {
+      if (!this.totalDuration) return 0
+      return Math.min(100, (this.currentTime / this.totalDuration) * 100)
+    },
+    miniPlayerTintStyle() {
+      if (this.coverRgb && this.coverRgb !== 'rgb(55, 56, 56)') {
+        return { background: 'linear-gradient(90deg, ' + this.coverRgb.replace('rgb', 'rgba').replace(')', ', 0.05)') + ' 0%, transparent 50%)' }
+      }
+      return {}
     }
   },
   methods: {
@@ -672,7 +707,7 @@ export default {
       if (!e.changedTouches || this.$store.state.globals.isModalOpen) return
       const touchPosY = e.changedTouches[0].pageY
       // when minimized only listen to touchstart on the player
-      if (!this.showFullscreen && touchPosY < window.innerHeight - 120) return
+      if (!this.showFullscreen && touchPosY < window.innerHeight - 64) return
 
       // for ios
       if (!this.showFullscreen && e.pageX < 20) {
@@ -1008,16 +1043,52 @@ export default {
 }
 
 .playerContainer {
-  height: 120px;
+  height: 64px;
 }
 .fullscreen .playerContainer {
   height: 200px;
 }
 #playerContent {
-  box-shadow: 0px -8px 8px #11111155;
+  box-shadow: none;
 }
 .fullscreen #playerContent {
   box-shadow: none;
+}
+
+/* Mini-player row (collapsed) */
+.mini-player-row {
+  height: 64px;
+  background-color: rgb(var(--color-secondary));
+  border-top: 1px solid rgb(var(--color-border) / var(--color-border-opacity));
+  overflow: hidden;
+}
+.mini-player-row .mini-player-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background-color: #1ad691;
+  border-radius: 1px;
+  transition: width 1s linear;
+}
+
+/* Hide the old cover/title/controls in collapsed mode */
+#streamContainer:not(.fullscreen) .cover-wrapper {
+  display: none;
+}
+#streamContainer:not(.fullscreen) .title-author-texts {
+  display: none;
+}
+#streamContainer:not(.fullscreen) #playerControls {
+  display: none;
+}
+#streamContainer:not(.fullscreen) #playerTrack {
+  display: none;
+}
+
+/* Hide mini-player row in fullscreen */
+.fullscreen .mini-player-row {
+  display: none;
 }
 
 #playerTrack {
@@ -1027,6 +1098,14 @@ export default {
 }
 .fullscreen #playerTrack {
   bottom: unset;
+}
+
+/* Scrubber track - 6px height, accent played */
+.scrubber-track {
+  height: 4px;
+}
+.fullscreen .scrubber-track {
+  height: 6px;
 }
 
 .cover-wrapper {
@@ -1127,6 +1206,7 @@ export default {
   bottom: calc(50% + 120px - (calc(var(--cover-image-height)) / 2));
   border-radius: 16px;
   overflow: hidden;
+  box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.3);
 }
 
 .fullscreen #playerControls {
@@ -1143,10 +1223,10 @@ export default {
   font-size: 2rem;
 }
 .fullscreen #playerControls .play-btn {
-  height: 65px;
-  width: 65px;
-  min-width: 65px;
-  min-height: 65px;
+  height: 68px;
+  width: 68px;
+  min-width: 68px;
+  min-height: 68px;
 }
 .fullscreen #playerControls .play-btn .material-symbols {
   font-size: 2.1rem;

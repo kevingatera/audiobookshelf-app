@@ -21,6 +21,7 @@ module.exports = {
         track: 'rgb(var(--color-track) / <alpha-value>)',
         'track-buffered': 'rgb(var(--color-track-buffered) / <alpha-value>)',
         accent: '#1ad691',
+        'accent-muted': '#15b87d',
         error: '#FF5252',
         info: '#2196F3',
         success: '#4CAF50',
@@ -56,6 +57,26 @@ module.exports = {
       },
       minHeight: {
         12: '3rem'
+      },
+      borderRadius: {
+        'card': '12px',
+        'sheet': '16px',
+        'btn': '8px'
+      },
+      transitionTimingFunction: {
+        'out-expo': 'cubic-bezier(0.16, 1, 0.3, 1)',
+        'out-quart': 'cubic-bezier(0.25, 1, 0.5, 1)'
+      },
+      transitionDuration: {
+        '250': '250ms',
+        '400': '400ms'
+      },
+      zIndex: {
+        'bottom-nav': '40',
+        'appbar': '45',
+        'sheet': '50',
+        'scrim': '49',
+        'toast': '60'
       }
     }
   },

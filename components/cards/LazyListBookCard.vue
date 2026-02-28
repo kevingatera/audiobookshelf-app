@@ -1,9 +1,9 @@
 <template>
-  <div ref="card" :id="`book-card-${index}`" :style="{ minWidth: width + 'px', maxWidth: width + 'px', height: height + 'px' }" class="rounded-sm z-10 cursor-pointer py-1" @click="clickCard">
+  <div ref="card" :id="`book-card-${index}`" :style="{ minWidth: width + 'px', maxWidth: width + 'px', height: height + 'px' }" class="rounded-xl z-10 bg-secondary cursor-pointer py-1" style="margin-bottom: 8px" @click="clickCard">
     <div class="h-full flex relative">
-      <div class="list-card-cover relative">
+      <div class="list-card-cover relative rounded-lg overflow-hidden">
         <!-- When cover image does not fill -->
-        <div v-show="showCoverBg" class="absolute top-0 left-0 w-full h-full overflow-hidden rounded-sm bg-primary">
+        <div v-show="showCoverBg" class="absolute top-0 left-0 w-full h-full overflow-hidden rounded-lg bg-secondary">
           <div class="absolute cover-bg" ref="coverBg" />
         </div>
 
@@ -12,20 +12,20 @@
         </div>
 
         <!-- No progress shown for collapsed series or podcasts in library -->
-        <div v-if="!isPodcast && !collapsedSeries" class="absolute bottom-0 left-0 h-1 shadow-sm max-w-full z-10 rounded-b" :class="itemIsFinished ? 'bg-success' : 'bg-yellow-400'" :style="{ width: coverWidth * userProgressPercent + 'px' }"></div>
+        <div v-if="!isPodcast && !collapsedSeries" class="absolute bottom-0 left-0 max-w-full z-10 rounded-b-lg rounded-full box-shadow-progressbar" :class="itemIsFinished ? 'bg-success' : 'bg-accent'" :style="{ width: coverWidth * userProgressPercent + 'px', height: '3px' }"></div>
       </div>
       <div class="flex-grow pl-2" :class="showPlayButton ? 'pr-12' : 'pr-2'">
-        <p class="whitespace-normal line-clamp-2" :style="{ fontSize: 0.8 * sizeMultiplier + 'rem' }">
+        <p class="whitespace-normal text-fg text-sm font-semibold line-clamp-2" :style="{ fontSize: 0.8 * sizeMultiplier + 'rem' }">
           <span v-if="seriesSequence">#{{ seriesSequence }}&nbsp;</span>{{ displayTitle }}
         </p>
-        <p class="truncate text-fg-muted" :style="{ fontSize: 0.7 * sizeMultiplier + 'rem' }">{{ displayAuthor }}</p>
-        <p v-if="displaySortLine" class="truncate text-fg-muted" :style="{ fontSize: 0.7 * sizeMultiplier + 'rem' }">{{ displaySortLine }}</p>
-        <p v-if="duration" class="truncate text-fg-muted" :style="{ fontSize: 0.7 * sizeMultiplier + 'rem' }">{{ $elapsedPretty(duration) }}</p>
+        <p class="text-fg-muted text-xs line-clamp-1" :style="{ fontSize: 0.7 * sizeMultiplier + 'rem' }">{{ displayAuthor }}</p>
+        <p v-if="displaySortLine" class="text-fg-muted text-xs line-clamp-1" :style="{ fontSize: 0.7 * sizeMultiplier + 'rem' }">{{ displaySortLine }}</p>
+        <p v-if="duration" class="text-fg-muted text-xs line-clamp-1" :style="{ fontSize: 0.7 * sizeMultiplier + 'rem' }">{{ $elapsedPretty(duration) }}</p>
 
-        <p v-if="numEpisodesIncomplete" class="truncate text-fg-muted" :style="{ fontSize: 0.7 * sizeMultiplier + 'rem' }">
+        <p v-if="numEpisodesIncomplete" class="text-fg-muted text-xs line-clamp-1" :style="{ fontSize: 0.7 * sizeMultiplier + 'rem' }">
           {{ $getString('LabelNumEpisodesIncomplete', [numEpisodes, numEpisodesIncomplete]) }}
         </p>
-        <p v-else-if="numEpisodes" class="truncate text-fg-muted" :style="{ fontSize: 0.7 * sizeMultiplier + 'rem' }">
+        <p v-else-if="numEpisodes" class="text-fg-muted text-xs line-clamp-1" :style="{ fontSize: 0.7 * sizeMultiplier + 'rem' }">
           {{ $getString('LabelNumEpisodes', [numEpisodes]) }}
         </p>
       </div>
@@ -40,8 +40,8 @@
         </button>
       </div>
 
-      <div v-if="localLibraryItem || isLocal" class="absolute top-0 right-0 z-20" :style="{ top: 0.375 * sizeMultiplier + 'rem', right: 0.375 * sizeMultiplier + 'rem', padding: `${0.1 * sizeMultiplier}rem ${0.25 * sizeMultiplier}rem` }">
-        <span class="material-symbols text-2xl text-success">download_done</span>
+      <div v-if="localLibraryItem || isLocal" class="absolute z-20 flex items-center justify-center bg-black/40 rounded-full p-0.5" :style="{ bottom: 0.375 * sizeMultiplier + 'rem', right: 0.375 * sizeMultiplier + 'rem' }">
+        <span class="material-symbols text-sm text-success">download_done</span>
       </div>
     </div>
   </div>

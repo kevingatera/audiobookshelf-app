@@ -1,10 +1,23 @@
 <template>
-  <div class="w-full h-full">
-    <div class="px-4 py-6">
-      <ui-text-input ref="input" v-model="search" @input="updateSearch" borderless :placeholder="$strings.ButtonSearch" bg="white bg-opacity-10" rounded="md" prepend-icon="search" text-size="base" clearable class="w-full text-lg" />
+  <div class="w-full h-full overflow-hidden" style="-webkit-overflow-scrolling: touch">
+    <!-- Search input -->
+    <div class="bg-secondary rounded-xl mx-4 mt-4 px-4 py-2 flex items-center gap-3">
+      <span class="material-symbols text-fg-muted text-xl">search</span>
+      <input
+        ref="searchInput"
+        v-model="search"
+        @input="updateSearch(search)"
+        :placeholder="$strings.ButtonSearch"
+        class="flex-1 bg-transparent text-fg text-base outline-none placeholder-fg-muted/50"
+      />
+      <span v-if="search" class="material-symbols text-fg-muted text-xl cursor-pointer" @click="search = ''; updateSearch('')">close</span>
     </div>
-    <div class="w-full overflow-x-hidden overflow-y-auto search-content px-4" @click.stop>
-      <div v-if="isBookLibrary && requestCapabilities.enabled" class="request-panel mb-4 overflow-hidden rounded-xl border border-white/10">
+
+    <!-- Results area -->
+    <div class="w-full overflow-x-hidden overflow-y-auto px-0 pt-2 pb-4" style="height: calc(100% - 72px); max-height: calc(100% - 72px); -webkit-overflow-scrolling: touch" @click.stop>
+
+      <!-- Book request panel -->
+      <div v-if="isBookLibrary && requestCapabilities.enabled" class="request-panel mb-4 overflow-hidden rounded-xl border border-white/10 mx-4">
         <div class="request-panel-head flex items-center justify-between px-3 py-2.5">
           <div class="flex items-center gap-2">
             <span class="material-symbols text-base text-sky-200">library_add</span>
@@ -55,64 +68,95 @@
           <p v-else-if="lastSearch && !requestLoading" class="mt-2 text-xs text-fg-muted">{{ $strings.MessageNoItemsFound }}</p>
         </div>
       </div>
-      <div v-show="isFetching" class="w-full py-8 flex justify-center">
-        <p class="text-lg text-fg-muted">{{ $strings.MessageFetching }}</p>
+
+      <!-- Loading state -->
+      <div v-show="isFetching" class="w-full py-12 flex flex-col items-center justify-center">
+        <span class="material-symbols text-3xl text-fg-muted mb-2 animate-spin">progress_activity</span>
+        <p class="text-sm text-fg-muted">{{ $strings.MessageFetching }}</p>
       </div>
-      <div v-if="!isFetching && lastSearch && !totalResults" class="w-full py-8 flex justify-center">
-        <p class="text-lg text-fg-muted">{{ $strings.MessageNoItemsFound }}</p>
+
+      <!-- Empty search state -->
+      <div v-if="!isFetching && !lastSearch" class="w-full py-16 flex flex-col items-center justify-center">
+        <span class="material-symbols text-5xl text-fg-muted/40 mb-3">search</span>
+        <p class="text-sm text-fg-muted">Search your library</p>
       </div>
-      <p v-if="bookResults.length" class="font-semibold text-sm mb-1">{{ $strings.LabelBooks }}</p>
-      <template v-for="item in bookResults">
-        <div :key="item.libraryItem.id" class="w-full h-16 py-1">
-          <nuxt-link :to="`/item/${item.libraryItem.id}`">
-            <cards-item-search-card :library-item="item.libraryItem" :search="lastSearch" />
-          </nuxt-link>
-        </div>
+
+      <!-- No results state -->
+      <div v-if="!isFetching && lastSearch && !totalResults" class="w-full py-16 flex flex-col items-center justify-center">
+        <span class="material-symbols text-5xl text-fg-muted/40 mb-3">search_off</span>
+        <p class="text-sm text-fg-muted">{{ $strings.MessageNoItemsFound }}</p>
+      </div>
+
+      <!-- Books -->
+      <template v-if="bookResults.length">
+        <p class="text-sm font-semibold text-fg-muted uppercase tracking-wider px-4 pt-4 pb-2">{{ $strings.LabelBooks }}</p>
+        <template v-for="item in bookResults">
+          <div :key="item.libraryItem.id" class="w-full h-16 py-1 px-4">
+            <nuxt-link :to="`/item/${item.libraryItem.id}`">
+              <cards-item-search-card :library-item="item.libraryItem" :search="lastSearch" />
+            </nuxt-link>
+          </div>
+        </template>
       </template>
 
-      <p v-if="podcastResults.length" class="uppercase text-xs text-fg-muted my-1 px-1 font-semibold">{{ $strings.LabelPodcasts }}</p>
-      <template v-for="item in podcastResults">
-        <div :key="item.libraryItem.id" class="text-fg select-none relative py-1">
-          <nuxt-link :to="`/item/${item.libraryItem.id}`">
-            <cards-item-search-card :library-item="item.libraryItem" :search="lastSearch" />
-          </nuxt-link>
-        </div>
+      <!-- Podcasts -->
+      <template v-if="podcastResults.length">
+        <p class="text-sm font-semibold text-fg-muted uppercase tracking-wider px-4 pt-4 pb-2">{{ $strings.LabelPodcasts }}</p>
+        <template v-for="item in podcastResults">
+          <div :key="item.libraryItem.id" class="text-fg select-none relative py-1 px-4">
+            <nuxt-link :to="`/item/${item.libraryItem.id}`">
+              <cards-item-search-card :library-item="item.libraryItem" :search="lastSearch" />
+            </nuxt-link>
+          </div>
+        </template>
       </template>
 
-      <p v-if="seriesResults.length" class="font-semibold text-sm mb-1 mt-2">{{ $strings.LabelSeries }}</p>
-      <template v-for="seriesResult in seriesResults">
-        <div :key="seriesResult.series.id" class="w-full h-16 py-1">
-          <nuxt-link :to="`/bookshelf/series/${seriesResult.series.id}`">
-            <cards-series-search-card :series="seriesResult.series" :book-items="seriesResult.books" />
-          </nuxt-link>
-        </div>
+      <!-- Series -->
+      <template v-if="seriesResults.length">
+        <p class="text-sm font-semibold text-fg-muted uppercase tracking-wider px-4 pt-4 pb-2">{{ $strings.LabelSeries }}</p>
+        <template v-for="seriesResult in seriesResults">
+          <div :key="seriesResult.series.id" class="w-full h-16 py-1 px-4">
+            <nuxt-link :to="`/bookshelf/series/${seriesResult.series.id}`">
+              <cards-series-search-card :series="seriesResult.series" :book-items="seriesResult.books" />
+            </nuxt-link>
+          </div>
+        </template>
       </template>
 
-      <p v-if="authorResults.length" class="font-semibold text-sm mb-1 mt-2">{{ $strings.LabelAuthors }}</p>
-      <template v-for="authorResult in authorResults">
-        <div :key="authorResult.id" class="w-full h-14 py-1">
-          <nuxt-link :to="`/bookshelf/library?filter=authors.${$encode(authorResult.id)}`">
-            <cards-author-search-card :author="authorResult" />
-          </nuxt-link>
-        </div>
+      <!-- Authors -->
+      <template v-if="authorResults.length">
+        <p class="text-sm font-semibold text-fg-muted uppercase tracking-wider px-4 pt-4 pb-2">{{ $strings.LabelAuthors }}</p>
+        <template v-for="authorResult in authorResults">
+          <div :key="authorResult.id" class="w-full h-14 py-1 px-4">
+            <nuxt-link :to="`/bookshelf/library?filter=authors.${$encode(authorResult.id)}`">
+              <cards-author-search-card :author="authorResult" />
+            </nuxt-link>
+          </div>
+        </template>
       </template>
 
-      <p v-if="narratorResults.length" class="font-semibold text-sm mb-1 mt-2">{{ $strings.LabelNarrators }}</p>
-      <template v-for="narrator in narratorResults">
-        <div :key="narrator.name" class="w-full h-14 py-1">
-          <nuxt-link :to="`/bookshelf/library?filter=narrators.${$encode(narrator.name)}`">
-            <cards-narrator-search-card :narrator="narrator.name" />
-          </nuxt-link>
-        </div>
+      <!-- Narrators -->
+      <template v-if="narratorResults.length">
+        <p class="text-sm font-semibold text-fg-muted uppercase tracking-wider px-4 pt-4 pb-2">{{ $strings.LabelNarrators }}</p>
+        <template v-for="narrator in narratorResults">
+          <div :key="narrator.name" class="w-full h-14 py-1 px-4">
+            <nuxt-link :to="`/bookshelf/library?filter=narrators.${$encode(narrator.name)}`">
+              <cards-narrator-search-card :narrator="narrator.name" />
+            </nuxt-link>
+          </div>
+        </template>
       </template>
 
-      <p v-if="tagResults.length" class="font-semibold text-sm mb-1 mt-2">{{ $strings.LabelTags }}</p>
-      <template v-for="tag in tagResults">
-        <div :key="tag.name" class="w-full h-14 py-1">
-          <nuxt-link :to="`/bookshelf/library?filter=tags.${$encode(tag.name)}`">
-            <cards-tag-search-card :tag="tag.name" />
-          </nuxt-link>
-        </div>
+      <!-- Tags -->
+      <template v-if="tagResults.length">
+        <p class="text-sm font-semibold text-fg-muted uppercase tracking-wider px-4 pt-4 pb-2">{{ $strings.LabelTags }}</p>
+        <template v-for="tag in tagResults">
+          <div :key="tag.name" class="w-full h-14 py-1 px-4">
+            <nuxt-link :to="`/bookshelf/library?filter=tags.${$encode(tag.name)}`">
+              <cards-tag-search-card :tag="tag.name" />
+            </nuxt-link>
+          </div>
+        </template>
       </template>
     </div>
   </div>
@@ -240,8 +284,8 @@ export default {
     },
     setFocus() {
       setTimeout(() => {
-        if (this.$refs.input) {
-          this.$refs.input.focus()
+        if (this.$refs.searchInput) {
+          this.$refs.searchInput.focus()
         }
       }, 100)
     }
@@ -252,18 +296,13 @@ export default {
       this.search = this.$store.state.globals.lastSearch
       this.runSearch(this.search)
     } else {
-      this.$nextTick(this.setFocus())
+      this.$nextTick(() => this.$refs.searchInput?.focus())
     }
   }
 }
 </script>
 
 <style>
-.search-content {
-  height: calc(100% - 108px);
-  max-height: calc(100% - 108px);
-}
-
 .request-panel {
   background: linear-gradient(160deg, rgba(20, 26, 39, 0.95), rgba(15, 24, 32, 0.92) 52%, rgba(27, 33, 47, 0.95));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);

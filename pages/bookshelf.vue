@@ -1,8 +1,7 @@
 <template>
   <div class="w-full h-full">
-    <home-bookshelf-nav-bar />
-    <home-bookshelf-toolbar v-show="!hideToolbar" />
-    <div id="bookshelf-wrapper" class="main-content overflow-y-auto overflow-x-hidden relative" :class="hideToolbar ? 'no-toolbar' : ''">
+    <div id="bookshelf-wrapper" class="w-full h-full overflow-y-auto overflow-x-hidden relative">
+      <home-bookshelf-toolbar v-show="!hideToolbar" class="sticky top-0 z-10" />
       <nuxt-child />
     </div>
   </div>
@@ -29,17 +28,3 @@ export default {
   }
 }
 </script>
-
-<style>
-.main-content {
-  height: calc(100% - 72px);
-  max-height: calc(100% - 72px);
-  min-height: calc(100% - 72px);
-  max-width: 100vw;
-}
-.main-content.no-toolbar {
-  height: calc(100% - 36px);
-  max-height: calc(100% - 36px);
-  min-height: calc(100% - 36px);
-}
-</style>

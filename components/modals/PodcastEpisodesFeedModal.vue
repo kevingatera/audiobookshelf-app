@@ -14,10 +14,10 @@
               <ui-checkbox v-else v-model="selectedEpisodes[String(index)]" small checkbox-bg="primary" border-color="gray-600" />
             </div>
             <div class="pl-9 pr-2 py-2 border-b border-white border-opacity-10">
-              <p v-if="episode.episode" class="font-semibold text-gray-200 text-xs">#{{ episode.episode }}</p>
+              <p v-if="episode.episode" class="font-semibold text-fg text-xs">#{{ episode.episode }}</p>
               <p class="break-words mb-1 text-sm">{{ episode.title }}</p>
-              <p v-if="episode.subtitle" class="break-words mb-1 text-xs text-gray-300 episode-subtitle">{{ episode.subtitle }}</p>
-              <p class="text-xxs text-gray-300">{{ $getString('LabelPublishedDate', [episode.publishedAt ? $dateDistanceFromNow(episode.publishedAt) : $strings.LabelUnknown]) }}</p>
+              <p v-if="episode.subtitle" class="break-words mb-1 text-xs text-fg-muted episode-subtitle">{{ episode.subtitle }}</p>
+              <p class="text-xxs text-fg-muted">{{ $getString('LabelPublishedDate', [episode.publishedAt ? $dateDistanceFromNow(episode.publishedAt) : $strings.LabelUnknown]) }}</p>
             </div>
           </div>
         </template>

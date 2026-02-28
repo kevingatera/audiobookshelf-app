@@ -1,124 +1,132 @@
 <template>
-  <div class="w-full h-full py-6 px-2">
+  <div class="w-full h-full bg-bg">
     <div v-if="localLibraryItem" class="w-full h-full">
-      <div class="px-2 flex items-center mb-2">
-        <p class="text-base font-semibold truncate">{{ mediaMetadata.title }}</p>
-        <div class="flex-grow" />
+      <!-- Header -->
+      <div class="px-4 pt-6 pb-2 flex items-center">
+        <p class="text-base font-semibold text-fg truncate flex-grow">{{ mediaMetadata.title }}</p>
 
-        <button v-if="audioTracks.length && !isPodcast" class="shadow-sm text-success flex items-center justify-center rounded-full mx-2" @click.stop="play">
+        <button v-if="audioTracks.length && !isPodcast" class="text-success flex items-center justify-center rounded-full mx-2" @click.stop="play">
           <span class="material-symbols fill" style="font-size: 2rem">play_arrow</span>
         </button>
-        <span class="material-symbols text-2xl" @click="showItemDialog">more_vert</span>
+        <span class="material-symbols text-2xl text-fg-muted" @click="showItemDialog">more_vert</span>
       </div>
 
-      <p v-if="!isIos" class="px-2 text-sm mb-0.5 text-fg-muted">{{ $strings.LabelFolder }}: {{ folderName }}</p>
+      <p v-if="!isIos" class="px-4 text-xs text-fg-muted">{{ $strings.LabelFolder }}: {{ folderName }}</p>
+      <p class="px-4 mb-4 text-xs text-fg-muted mt-0.5">{{ libraryItemId ? 'Linked to item on server ' + liServerAddress : 'Not linked to server item' }}</p>
 
-      <p class="px-2 mb-4 text-xs text-fg-muted">{{ libraryItemId ? 'Linked to item on server ' + liServerAddress : 'Not linked to server item' }}</p>
-
-      <div class="w-full max-w-full media-item-container overflow-y-auto overflow-x-hidden relative pb-4" :class="{ 'media-order-changed': orderChanged }">
-        <div v-if="!isPodcast && audioTracksCopy.length" class="w-full py-2">
-          <div class="flex justify-between items-center mb-2">
-            <p class="text-base">Audio Tracks ({{ audioTracks.length }})</p>
-            <p class="text-xs text-fg-muted px-2">{{ $strings.LabelTotalSize }}: {{ $bytesPretty(totalAudioSize) }}</p>
+      <div class="w-full max-w-full media-item-container overflow-y-auto overflow-x-hidden relative pb-4" :class="{ 'media-order-changed': orderChanged }" style="-webkit-overflow-scrolling: touch">
+        <!-- Audio Tracks section (books) -->
+        <div v-if="!isPodcast && audioTracksCopy.length">
+          <div class="flex justify-between items-center px-4 pt-2 pb-2">
+            <p class="text-xs font-semibold text-fg-muted uppercase tracking-wider">Audio Tracks ({{ audioTracks.length }})</p>
+            <p class="text-xs text-fg-muted">{{ $strings.LabelTotalSize }}: {{ $bytesPretty(totalAudioSize) }}</p>
           </div>
 
-          <draggable v-model="audioTracksCopy" v-bind="dragOptions" handle=".drag-handle" draggable=".item" tag="div" @start="drag = true" @end="drag = false" @update="draggableUpdate" :disabled="isIos">
-            <transition-group type="transition" :name="!drag ? 'dragtrack' : null">
-              <template v-for="track in audioTracksCopy">
-                <div :key="track.localFileId" class="flex items-center my-1 item">
-                  <div v-if="!isIos" class="w-8 h-12 flex items-center justify-center" style="min-width: 32px">
-                    <span class="material-symbols drag-handle text-lg text-fg-muted">menu</span>
+          <div class="bg-secondary rounded-xl mx-4 mb-4 overflow-hidden">
+            <draggable v-model="audioTracksCopy" v-bind="dragOptions" handle=".drag-handle" draggable=".item" tag="div" @start="drag = true" @end="drag = false" @update="draggableUpdate" :disabled="isIos">
+              <transition-group type="transition" :name="!drag ? 'dragtrack' : null">
+                <template v-for="track in audioTracksCopy">
+                  <div :key="track.localFileId" class="flex items-center px-4 py-3 border-b border-warm last:border-0 item">
+                    <div v-if="!isIos" class="w-6 flex items-center justify-center mr-2" style="min-width: 24px">
+                      <span class="material-symbols drag-handle text-base text-fg-muted">drag_indicator</span>
+                    </div>
+                    <div class="w-7 flex items-center justify-center mr-2" style="min-width: 28px">
+                      <p class="font-mono font-bold text-base text-fg">{{ track.index }}</p>
+                    </div>
+                    <div class="flex-grow min-w-0">
+                      <p class="text-sm text-fg truncate">{{ track.title }}</p>
+                      <p class="text-xs text-fg-muted mt-0.5">{{ track.mimeType }} &middot; {{ $elapsedPretty(track.duration) }}</p>
+                    </div>
+                    <div v-if="!isIos" class="ml-2">
+                      <span class="material-symbols text-xl text-fg-muted" @click="showTrackDialog(track)">more_vert</span>
+                    </div>
                   </div>
-                  <div class="w-8 h-12 flex items-center justify-center" style="min-width: 32px">
-                    <p class="font-mono font-bold text-xl">{{ track.index }}</p>
-                  </div>
-                  <div class="flex-grow px-2">
-                    <p class="text-xs">{{ track.title }}</p>
-                  </div>
-                  <div class="w-20 text-center text-fg-muted" style="min-width: 80px">
-                    <p class="text-xs">{{ track.mimeType }}</p>
-                    <p class="text-sm">{{ $elapsedPretty(track.duration) }}</p>
-                  </div>
-                  <div v-if="!isIos" class="w-12 h-12 flex items-center justify-center" style="min-width: 48px">
-                    <span class="material-symbols text-2xl" @click="showTrackDialog(track)">more_vert</span>
-                  </div>
+                </template>
+              </transition-group>
+            </draggable>
+          </div>
+        </div>
+
+        <!-- Episodes section (podcasts) -->
+        <div v-if="isPodcast">
+          <div class="flex justify-between items-center px-4 pt-2 pb-2">
+            <p class="text-xs font-semibold text-fg-muted uppercase tracking-wider">Episodes ({{ episodes.length }})</p>
+            <p class="text-xs text-fg-muted">{{ $strings.LabelTotalSize }}: {{ $bytesPretty(totalEpisodesSize) }}</p>
+          </div>
+
+          <div class="bg-secondary rounded-xl mx-4 mb-4 overflow-hidden">
+            <template v-for="episode in episodes">
+              <div :key="episode.id" class="flex items-center px-4 py-3 border-b border-warm last:border-0">
+                <div class="w-7 flex items-center justify-center mr-2" style="min-width: 28px">
+                  <p class="font-mono font-bold text-base text-fg">{{ episode.index }}</p>
                 </div>
-              </template>
-            </transition-group>
-          </draggable>
-        </div>
-
-        <div v-if="isPodcast" class="w-full py-2">
-          <div class="flex justify-between items-center mb-2">
-            <p class="text-base">Episodes ({{ episodes.length }})</p>
-            <p class="text-xs text-fg-muted px-2">{{ $strings.LabelTotalSize }}: {{ $bytesPretty(totalEpisodesSize) }}</p>
+                <div class="flex-grow min-w-0">
+                  <p class="text-sm text-fg truncate">{{ episode.title }}</p>
+                  <p class="text-xs text-fg-muted mt-0.5">{{ episode.audioTrack.mimeType }} &middot; {{ $elapsedPretty(episode.audioTrack.duration) }}</p>
+                </div>
+                <span class="material-symbols text-xl text-fg-muted ml-2" @click="showTrackDialog(episode)">more_vert</span>
+              </div>
+            </template>
           </div>
-          <template v-for="episode in episodes">
-            <div :key="episode.id" class="flex items-center my-1">
-              <div class="w-10 h-12 flex items-center justify-center" style="min-width: 48px">
-                <p class="font-mono font-bold text-xl">{{ episode.index }}</p>
-              </div>
-              <div class="flex-grow px-2">
-                <p class="text-xs">{{ episode.title }}</p>
-              </div>
-              <div class="w-20 text-center text-fg-muted" style="min-width: 80px">
-                <p class="text-xs">{{ episode.audioTrack.mimeType }}</p>
-                <p class="text-sm">{{ $elapsedPretty(episode.audioTrack.duration) }}</p>
-              </div>
-              <div class="w-12 h-12 flex items-center justify-center" style="min-width: 48px">
-                <span class="material-symbols text-2xl" @click="showTrackDialog(episode)">more_vert</span>
-              </div>
-            </div>
-          </template>
         </div>
 
-        <div v-if="localFileForEbook" class="w-full py-2">
-          <p class="text-base mb-2">EBook File</p>
+        <!-- EBook File section -->
+        <div v-if="localFileForEbook">
+          <p class="text-xs font-semibold text-fg-muted uppercase tracking-wider px-4 pt-2 pb-2">EBook File</p>
 
-          <div class="flex items-center my-1">
-            <div class="w-10 h-12 flex items-center justify-center" style="min-width: 40px">
-              <p class="font-mono font-bold text-sm">{{ ebookFile.ebookFormat }}</p>
-            </div>
-            <div class="flex-grow px-2">
-              <p class="text-xs">{{ localFileForEbook.filename }}</p>
-            </div>
-            <div class="w-24 text-center text-fg-muted" style="min-width: 96px">
-              <p class="text-xs">{{ localFileForEbook.mimeType }}</p>
-              <p class="text-sm">{{ $bytesPretty(localFileForEbook.size) }}</p>
+          <div class="bg-secondary rounded-xl mx-4 mb-4 overflow-hidden">
+            <div class="flex items-center px-4 py-3">
+              <div class="w-8 flex items-center justify-center mr-3">
+                <p class="font-mono font-bold text-xs text-fg-muted uppercase">{{ ebookFile.ebookFormat }}</p>
+              </div>
+              <div class="flex-grow min-w-0">
+                <p class="text-sm text-fg truncate">{{ localFileForEbook.filename }}</p>
+                <p class="text-xs text-fg-muted mt-0.5">{{ localFileForEbook.mimeType }} &middot; {{ $bytesPretty(localFileForEbook.size) }}</p>
+              </div>
             </div>
           </div>
         </div>
 
+        <!-- Other Files section -->
         <div v-if="otherFiles.length">
-          <div class="flex justify-between items-center py-2">
-            <p class="text-lg">Other Files</p>
-            <p class="text-xs text-fg-muted px-2">{{ $strings.LabelTotalSize }}: {{ $bytesPretty(totalOtherFilesSize) }}</p>
+          <div class="flex justify-between items-center px-4 pt-2 pb-2">
+            <p class="text-xs font-semibold text-fg-muted uppercase tracking-wider">Other Files</p>
+            <p class="text-xs text-fg-muted">{{ $strings.LabelTotalSize }}: {{ $bytesPretty(totalOtherFilesSize) }}</p>
           </div>
-          <template v-for="file in otherFiles">
-            <div :key="file.id" class="flex items-center my-1">
-              <div class="w-12 h-12 flex items-center justify-center">
-                <img v-if="(file.mimeType || '').startsWith('image')" :src="getCapImageSrc(file.contentUrl)" class="w-full h-full object-contain" />
-                <span v-else class="material-symbols">music_note</span>
+
+          <div class="bg-secondary rounded-xl mx-4 mb-4 overflow-hidden">
+            <template v-for="file in otherFiles">
+              <div :key="file.id" class="flex items-center px-4 py-3 border-b border-warm last:border-0">
+                <div class="w-10 h-10 rounded-lg overflow-hidden bg-primary flex items-center justify-center mr-3" style="min-width: 40px">
+                  <img v-if="(file.mimeType || '').startsWith('image')" :src="getCapImageSrc(file.contentUrl)" class="w-full h-full object-contain" />
+                  <span v-else class="material-symbols text-fg-muted">music_note</span>
+                </div>
+                <div class="flex-grow min-w-0">
+                  <p class="text-sm text-fg truncate">{{ file.filename }}</p>
+                  <p class="text-xs text-fg-muted mt-0.5">{{ file.mimeType }} &middot; {{ $bytesPretty(file.size) }}</p>
+                </div>
               </div>
-              <div class="flex-grow px-2">
-                <p class="text-sm">{{ file.filename }}</p>
-              </div>
-              <div class="w-24 text-center text-fg-muted" style="min-width: 96px">
-                <p class="text-xs">{{ file.mimeType }}</p>
-                <p class="text-sm">{{ $bytesPretty(file.size) }}</p>
-              </div>
-            </div>
-          </template>
+            </template>
+          </div>
         </div>
 
-        <div class="mt-4 text-sm text-fg-muted">{{ $strings.LabelTotalSize }}: {{ $bytesPretty(totalLibraryItemSize) }}</div>
+        <!-- Total size summary -->
+        <div class="mx-4 mb-4 bg-secondary rounded-xl px-4 py-3">
+          <p class="text-xs text-fg-muted">{{ $strings.LabelTotalSize }}: {{ $bytesPretty(totalLibraryItemSize) }}</p>
+        </div>
       </div>
     </div>
-    <div v-else class="px-2 w-full h-full">
-      <p class="text-lg text-center px-8">{{ failed ? 'Failed to get local library item ' + localLibraryItemId : 'Loading..' }}</p>
+
+    <!-- Loading / error state -->
+    <div v-else class="w-full h-full flex items-center justify-center px-6">
+      <div class="bg-secondary rounded-xl px-6 py-8 text-center">
+        <span class="material-symbols text-3xl text-fg-muted mb-2">{{ failed ? 'error_outline' : 'hourglass_empty' }}</span>
+        <p class="text-sm text-fg-muted">{{ failed ? 'Failed to get local library item ' + localLibraryItemId : 'Loading..' }}</p>
+      </div>
     </div>
 
-    <div v-if="orderChanged" class="fixed left-0 w-full py-4 px-4 bg-bg box-shadow-book flex items-center" :style="{ bottom: isPlayerOpen ? '120px' : '0px' }">
+    <!-- Save order bar -->
+    <div v-if="orderChanged" class="fixed left-0 w-full py-4 px-4 bg-bg box-shadow-book flex items-center" :style="{ bottom: isPlayerOpen ? '64px' : '0px' }">
       <div class="flex-grow" />
       <ui-btn small color="success" @click="saveTrackOrder">{{ $strings.ButtonSaveOrder }}</ui-btn>
     </div>
