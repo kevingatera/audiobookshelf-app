@@ -1,6 +1,6 @@
 # Continuity Notes
 
-Last updated: 2026-02-28 (late, post-homelab signing + backup restore)
+Last updated: 2026-02-28 (night, UI modernization + homelab build prep)
 
 ## Current branch status
 
@@ -88,6 +88,33 @@ Last updated: 2026-02-28 (late, post-homelab signing + backup restore)
   - when no saved server configs exist and backup is found, app prompts to restore
   - restore repopulates server configs (without tokens) + device settings
   - prompt is shown once per install using local preference flag
+
+## UI modernization pass (current session)
+
+- Completed a broad UI modernization while preserving app behavior:
+  - new warm-token design foundation (`assets/tailwind.css`, `tailwind.config.js`)
+  - slim app shell + persistent bottom nav (`components/app/BottomNav.vue`, `layouts/default.vue`, `components/app/Appbar.vue`)
+  - bottom-sheet system and modal migrations (`components/modals/BottomSheet.vue` + migrated core modals)
+  - refreshed cards/shelves/player/form controls/pages for cleaner mobile UX
+  - dedicated UX audit fixes applied (touch targets, contrast, aria labels, empty states, hardcoded color cleanup)
+- Added legacy compatibility option:
+  - `Classic Shelf Style` toggle in settings
+  - persisted in local preferences via `plugins/localStore.js`
+  - `components/bookshelf/Shelf.vue` now respects this preference
+- Added reusable loading placeholders:
+  - `components/ui/SkeletonLoader.vue`
+  - `components/ui/BookCardSkeleton.vue`
+- Saved design system for future sessions in:
+  - `.interface-design/system.md`
+
+## Local build verification notes (current session)
+
+- `npm run generate` + `npx cap sync` succeeded locally.
+- Local Android build needs environment setup:
+  - first attempt failed with `Unsupported class file major version 69` when defaulting to Java 25
+  - rerun with Java 21 resolved that error (`JAVA_HOME=/usr/lib/jvm/java-21-openjdk`)
+  - build then failed due missing Android SDK (`ANDROID_HOME` / `android/local.properties` not set in this environment)
+- CI workflow remains the source of truth for homelab APK generation (`assembleHomelabRelease` in GitHub Actions).
 
 ## Follow-up suggestions for future PR to upstream
 
