@@ -1,8 +1,8 @@
 <template>
   <div>
-    <div class="border rounded-full border-gray-400 flex items-center cursor-pointer w-10 justify-start" :class="className" @click.stop="clickToggle">
-      <span class="rounded-full border w-5 h-5 border-gray-100 shadow transform transition-transform duration-100" :class="switchClassName"></span>
-    </div>
+    <button type="button" role="switch" :aria-checked="toggleValue" class="relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none active:scale-95" :class="trackClass" :disabled="disabled" @click.stop="clickToggle" style="transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1)">
+      <span class="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200" :class="thumbClass" style="transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1)"></span>
+    </button>
   </div>
 </template>
 
@@ -29,13 +29,31 @@ export default {
         this.$emit('input', val)
       }
     },
-    className() {
-      if (this.disabled) return this.toggleValue ? `bg-${this.onColor} cursor-not-allowed` : `bg-${this.offColor} cursor-not-allowed`
-      return this.toggleValue ? `bg-${this.onColor}` : `bg-${this.offColor}`
+    trackClass() {
+      var classes = []
+      if (this.disabled) {
+        classes.push('cursor-not-allowed opacity-50')
+      } else {
+        classes.push('cursor-pointer')
+      }
+      if (this.toggleValue) {
+        classes.push('bg-accent')
+      } else {
+        classes.push('bg-bg')
+      }
+      return classes.join(' ')
     },
-    switchClassName() {
-      var bgColor = this.disabled ? 'bg-gray-300' : 'bg-white'
-      return this.toggleValue ? 'translate-x-5 ' + bgColor : bgColor
+    thumbClass() {
+      var classes = []
+      if (this.toggleValue) {
+        classes.push('translate-x-5')
+      } else {
+        classes.push('translate-x-0')
+      }
+      if (this.disabled) {
+        classes.push('bg-bg-hover')
+      }
+      return classes.join(' ')
     }
   },
   methods: {

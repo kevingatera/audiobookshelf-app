@@ -39,7 +39,7 @@ export default {
       var shelfOffsetY = this.showBookshelfListView ? 8 : this.isBookEntity ? 24 : 16
       var row = index % this.entitiesPerShelf
 
-      var marginShiftLeft = this.showBookshelfListView ? 0 : 12
+      var marginShiftLeft = this.showBookshelfListView ? 0 : 14
       var shelfOffsetX = row * this.totalEntityCardWidth + this.bookshelfMarginLeft + marginShiftLeft
 
       var ComponentClass = this.getComponentClass()

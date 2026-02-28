@@ -1,52 +1,54 @@
 <template>
-  <div class="w-full h-full px-0 py-4 overflow-y-auto">
+  <div class="w-full h-full overflow-y-auto pb-4" style="-webkit-overflow-scrolling: touch">
     <!-- Year in review banner shown at the top in December and January -->
-    <stats-year-in-review-banner v-if="showYearInReviewBanner" />
+    <div v-if="showYearInReviewBanner" class="px-4 pt-4">
+      <div class="rounded-xl overflow-hidden">
+        <stats-year-in-review-banner />
+      </div>
+    </div>
 
-    <h1 class="text-xl px-4">
+    <h1 class="text-xl font-semibold text-fg px-4 pt-4 pb-2">
       {{ $strings.HeaderYourStats }}
     </h1>
 
-    <div class="flex text-center justify-center">
-      <div class="flex p-2">
-        <div class="px-3">
-          <p class="text-4xl md:text-5xl font-bold">{{ $formatNumber(userItemsFinished.length) }}</p>
-          <p class="text-xs md:text-sm text-fg-muted">{{ $strings.LabelStatsItemsFinished }}</p>
-        </div>
+    <!-- Stats grid -->
+    <div class="grid grid-cols-3 gap-3 px-4 pt-2">
+      <div class="bg-secondary rounded-xl p-4 text-center">
+        <p class="text-3xl font-bold text-fg">{{ $formatNumber(userItemsFinished.length) }}</p>
+        <p class="text-xs text-fg-muted mt-1">{{ $strings.LabelStatsItemsFinished }}</p>
       </div>
-
-      <div class="flex p-2">
-        <div class="px-1">
-          <p class="text-4xl md:text-5xl font-bold">{{ $formatNumber(totalDaysListened) }}</p>
-          <p class="text-xs md:text-sm text-fg-muted">{{ $strings.LabelStatsDaysListened }}</p>
-        </div>
+      <div class="bg-secondary rounded-xl p-4 text-center">
+        <p class="text-3xl font-bold text-fg">{{ $formatNumber(totalDaysListened) }}</p>
+        <p class="text-xs text-fg-muted mt-1">{{ $strings.LabelStatsDaysListened }}</p>
       </div>
-
-      <div class="flex p-2">
-        <div class="px-1">
-          <p class="text-4xl md:text-5xl font-bold">{{ $formatNumber(totalMinutesListening) }}</p>
-          <p class="text-xs md:text-sm text-fg-muted">{{ $strings.LabelStatsMinutesListening }}</p>
-        </div>
+      <div class="bg-secondary rounded-xl p-4 text-center">
+        <p class="text-3xl font-bold text-fg">{{ $formatNumber(totalMinutesListening) }}</p>
+        <p class="text-xs text-fg-muted mt-1">{{ $strings.LabelStatsMinutesListening }}</p>
       </div>
     </div>
-    <div class="flex flex-col md:flex-row overflow-hidden max-w-full">
-      <stats-daily-listening-chart :listening-stats="listeningStats" class="lg:scale-100 transform scale-90 px-0" />
-      <div class="w-80 my-6 mx-auto">
-        <div class="flex mb-4 items-center">
-          <h1 class="text-2xl">{{ $strings.HeaderStatsRecentSessions }}</h1>
-          <div class="flex-grow" />
-        </div>
-        <p v-if="!mostRecentListeningSessions.length">{{ $strings.MessageNoListeningSessions }}</p>
+
+    <!-- Listening chart -->
+    <div class="px-4 pt-4">
+      <div class="bg-secondary rounded-xl p-4 overflow-hidden">
+        <stats-daily-listening-chart :listening-stats="listeningStats" class="w-full" />
+      </div>
+    </div>
+
+    <!-- Recent sessions -->
+    <div class="px-4 pt-4">
+      <div class="bg-secondary rounded-xl p-4">
+        <h2 class="text-base font-semibold text-fg mb-3">{{ $strings.HeaderStatsRecentSessions }}</h2>
+        <p v-if="!mostRecentListeningSessions.length" class="text-sm text-fg-muted">{{ $strings.MessageNoListeningSessions }}</p>
         <template v-for="(item, index) in mostRecentListeningSessions">
-          <div :key="item.id" class="w-full py-0.5">
-            <div class="flex items-center mb-1">
-              <p class="text-sm text-fg-muted w-8 min-w-8">{{ index + 1 }}.&nbsp;</p>
-              <div class="w-56">
+          <div :key="item.id" class="py-2" :class="index < mostRecentListeningSessions.length - 1 ? 'border-b border-warm' : ''">
+            <div class="flex items-center">
+              <p class="text-sm text-fg-muted w-6 min-w-[24px] flex-shrink-0">{{ index + 1 }}.</p>
+              <div class="flex-grow min-w-0">
                 <p class="text-sm text-fg truncate">{{ item.mediaMetadata ? item.mediaMetadata.title : '' }}</p>
                 <p class="text-xs text-fg-muted">{{ $dateDistanceFromNow(item.updatedAt) }}</p>
               </div>
-              <div class="w-16 min-w-16 text-right">
-                <p class="text-xs font-bold">{{ $elapsedPretty(item.timeListening) }}</p>
+              <div class="flex-shrink-0 ml-2">
+                <p class="text-xs font-bold text-fg">{{ $elapsedPretty(item.timeListening) }}</p>
               </div>
             </div>
           </div>
@@ -55,7 +57,11 @@
     </div>
 
     <!-- Year in review banner shown at the bottom Feb - Nov -->
-    <stats-year-in-review-banner v-if="!showYearInReviewBanner" />
+    <div v-if="!showYearInReviewBanner" class="px-4 pt-4">
+      <div class="rounded-xl overflow-hidden">
+        <stats-year-in-review-banner />
+      </div>
+    </div>
   </div>
 </template>
 

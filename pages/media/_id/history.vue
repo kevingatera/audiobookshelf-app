@@ -1,25 +1,33 @@
 <template>
-  <div class="w-full h-full px-3 py-4 overflow-y-auto relative bg-bg">
-    <p class="mb-4 text-lg font-semibold">History for {{ displayTitle }}</p>
+  <div class="w-full h-full overflow-y-auto relative bg-bg" style="-webkit-overflow-scrolling: touch">
+    <!-- Header -->
+    <p class="text-xs font-semibold text-fg-muted uppercase tracking-wider px-4 pt-6 pb-2">History for {{ displayTitle }}</p>
 
-    <div v-if="!mediaEvents.length" class="text-center py-8">
-      <p class="text-fg">No History</p>
+    <!-- Empty state -->
+    <div v-if="!mediaEvents.length" class="mx-4 mb-4">
+      <div class="bg-secondary rounded-xl px-6 py-8 text-center">
+        <span class="material-symbols text-3xl text-fg-muted mb-2">history</span>
+        <p class="text-sm text-fg-muted">No History</p>
+      </div>
     </div>
 
-    <div v-for="(events, name) in groupedMediaEvents" :key="name" class="py-2">
-      <p class="my-2 text-fg-muted font-semibold">{{ name }}</p>
-      <div v-for="(evt, index) in events" :key="index" class="py-3 flex items-center">
-        <p class="text-sm text-fg-muted w-12">{{ $formatDate(evt.timestamp, 'HH:mm') }}</p>
-        <span class="material-symbols fill px-2" :class="`text-${getEventColor(evt.name)}`">{{ getEventIcon(evt.name) }}</span>
-        <p class="text-sm text-fg px-1">{{ evt.name }}</p>
+    <!-- Grouped events -->
+    <div v-for="(events, name) in groupedMediaEvents" :key="name" class="mb-4">
+      <p class="text-xs font-semibold text-fg-muted uppercase tracking-wider px-4 pt-4 pb-2">{{ name }}</p>
+      <div class="bg-secondary rounded-xl mx-4 overflow-hidden">
+        <div v-for="(evt, index) in events" :key="index" class="px-4 py-3 flex items-center border-b border-warm last:border-0">
+          <p class="text-xs text-fg-muted w-10 font-mono">{{ $formatDate(evt.timestamp, 'HH:mm') }}</p>
+          <span class="material-symbols fill text-lg mx-2" :class="`text-${getEventColor(evt.name)}`">{{ getEventIcon(evt.name) }}</span>
+          <p class="text-sm text-fg">{{ evt.name }}</p>
 
-        <span v-if="evt.serverSyncAttempted && evt.serverSyncSuccess" class="material-symbols px-1 text-base text-success">cloud_done</span>
-        <span v-if="evt.serverSyncAttempted && !evt.serverSyncSuccess" class="material-symbols px-1 text-base text-error">error_outline</span>
+          <span v-if="evt.serverSyncAttempted && evt.serverSyncSuccess" class="material-symbols px-1 text-base text-success">cloud_done</span>
+          <span v-if="evt.serverSyncAttempted && !evt.serverSyncSuccess" class="material-symbols px-1 text-base text-error">error_outline</span>
 
-        <p v-if="evt.num" class="text-sm text-fg-muted italic px-1">+{{ evt.num }}</p>
+          <p v-if="evt.num" class="text-xs text-fg-muted italic px-1">+{{ evt.num }}</p>
 
-        <div class="flex-grow" />
-        <p class="text-base text-fg" @click="clickPlaybackTime(evt.currentTime)">{{ $secondsToTimestampFull(evt.currentTime) }}</p>
+          <div class="flex-grow" />
+          <p class="text-sm text-fg font-mono" @click="clickPlaybackTime(evt.currentTime)">{{ $secondsToTimestampFull(evt.currentTime) }}</p>
+        </div>
       </div>
     </div>
   </div>

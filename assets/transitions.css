@@ -1,23 +1,10 @@
+/* ── Slide (collapse/expand) ── */
 .slide-enter-active {
-  -moz-transition-duration: 0.1s;
-  -webkit-transition-duration: 0.1s;
-  -o-transition-duration: 0.1s;
-  transition-duration: 0.1s;
-  -moz-transition-timing-function: ease-in;
-  -webkit-transition-timing-function: ease-in;
-  -o-transition-timing-function: ease-in;
-  transition-timing-function: ease-in;
+  transition: max-height 150ms ease-in;
 }
 
 .slide-leave-active {
-  -moz-transition-duration: 0.2s;
-  -webkit-transition-duration: 0.2s;
-  -o-transition-duration: 0.2s;
-  transition-duration: 0.2s;
-  -moz-transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
-  -webkit-transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
-  -o-transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
-  transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
+  transition: max-height 200ms cubic-bezier(0, 1, 0.5, 1);
 }
 
 .slide-enter-to,
@@ -32,20 +19,90 @@
   max-height: 0;
 }
 
+/* ── Menu dropdown ── */
 .menu-enter,
 .menu-leave-active {
-  transform: translateY(-15px);
+  transform: translateY(-8px);
+  opacity: 0;
 }
 
 .menu-enter-active {
-  transition: all 0.2s;
+  transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .menu-leave-active {
-  transition: all 0.1s;
+  transition: all 150ms ease-in;
 }
 
-.menu-enter,
-.menu-leave-active {
+/* ── Page transition (fade + subtle lift) ── */
+.page-enter-active {
+  transition: opacity 200ms ease, transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.page-leave-active {
+  transition: opacity 150ms ease;
+}
+
+.page-enter {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.page-leave-to {
+  opacity: 0;
+}
+
+/* ── Sheet slide-up ── */
+.sheet-enter-active {
+  transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease;
+}
+
+.sheet-leave-active {
+  transition: transform 250ms cubic-bezier(0.4, 0, 1, 1), opacity 200ms ease;
+}
+
+.sheet-enter {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
+.sheet-leave-to {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
+.sheet-enter-to,
+.sheet-leave {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* ── Fade ── */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 200ms ease;
+}
+
+.fade-enter,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* ── Scale (for legacy centered modals) ── */
+.scale-enter-active {
+  transition: transform 250ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease;
+}
+
+.scale-leave-active {
+  transition: transform 200ms ease-in, opacity 200ms ease;
+}
+
+.scale-enter {
+  transform: scale(0.95);
+  opacity: 0;
+}
+
+.scale-leave-to {
+  transform: scale(0.95);
   opacity: 0;
 }

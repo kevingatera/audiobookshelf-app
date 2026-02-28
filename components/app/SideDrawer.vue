@@ -1,7 +1,8 @@
 <template>
   <div class="fixed top-0 left-0 right-0 layout-wrapper w-full z-50 overflow-hidden pointer-events-none">
     <div class="absolute top-0 left-0 w-full h-full bg-black transition-opacity duration-200" :class="show ? 'bg-opacity-60 pointer-events-auto' : 'bg-opacity-0'" @click="clickBackground" />
-    <div class="absolute top-0 right-0 w-64 h-full bg-bg transform transition-transform py-6 pointer-events-auto" :class="show ? '' : 'translate-x-64'" @click.stop>
+    <!-- UX-FIX: navigation role and aria-label -->
+    <div class="absolute top-0 right-0 w-64 h-full bg-bg transform transition-transform py-6 pointer-events-auto" role="navigation" aria-label="App navigation" :class="show ? '' : 'translate-x-64'" @click.stop>
       <div class="px-6 mb-4">
         <p v-if="user" class="text-base" v-html="$getString('HeaderWelcome', [username])" />
       </div>
@@ -25,10 +26,11 @@
         <div class="flex items-center">
           <p class="text-xs">{{ $config.version }}</p>
           <div class="flex-grow" />
-          <div v-if="user" class="flex items-center" @click="disconnect">
+          <!-- UX-FIX: min 44px touch target + aria-label on disconnect -->
+          <button v-if="user" class="flex items-center min-h-[44px] py-2" aria-label="Disconnect from server" @click="disconnect">
             <p class="text-xs pr-2">{{ $strings.ButtonDisconnect }}</p>
             <i class="material-symbols text-sm -mb-0.5">cloud_off</i>
-          </div>
+          </button>
         </div>
       </div>
     </div>

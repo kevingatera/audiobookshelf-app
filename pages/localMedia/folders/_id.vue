@@ -1,29 +1,28 @@
 <template>
-  <div class="w-full h-full py-6 px-4">
-    <div class="flex items-center mb-2">
-      <p class="text-base font-semibold">{{ $strings.LabelFolder }}: {{ folderName }}</p>
-      <div class="flex-grow" />
-
-      <span v-if="dialogItems.length" class="material-symbols text-2xl" @click="showDialog = true">more_vert</span>
+  <div class="w-full h-full bg-bg">
+    <!-- Header -->
+    <div class="flex items-center justify-between px-4 pt-6 pb-1">
+      <p class="text-base font-semibold text-fg">{{ $strings.LabelFolder }}: {{ folderName }}</p>
+      <span v-if="dialogItems.length" class="material-symbols text-2xl text-fg-muted" @click="showDialog = true">more_vert</span>
     </div>
 
-    <p class="text-sm mb-4 text-fg-muted">{{ $strings.LabelMediaType }}: {{ mediaType }}</p>
+    <p class="text-xs text-fg-muted px-4 mb-4">{{ $strings.LabelMediaType }}: {{ mediaType }}</p>
 
-    <p class="mb-2 text-base text-fg">{{ $strings.HeaderLocalLibraryItems }} ({{ localLibraryItems.length }})</p>
+    <!-- Items section header -->
+    <p class="text-xs font-semibold text-fg-muted uppercase tracking-wider px-4 pt-2 pb-2">{{ $strings.HeaderLocalLibraryItems }} ({{ localLibraryItems.length }})</p>
 
-    <div class="w-full media-item-container overflow-y-auto">
+    <!-- Items list -->
+    <div class="bg-secondary rounded-xl mx-4 mb-4 overflow-hidden media-item-container overflow-y-auto" style="-webkit-overflow-scrolling: touch">
       <template v-for="localLibraryItem in localLibraryItems">
-        <nuxt-link :to="`/localMedia/item/${localLibraryItem.id}`" :key="localLibraryItem.id" class="flex my-1">
-          <div class="w-12 h-12 min-w-12 min-h-12 bg-primary">
+        <nuxt-link :to="`/localMedia/item/${localLibraryItem.id}`" :key="localLibraryItem.id" class="flex items-center px-4 py-3 border-b border-warm last:border-0">
+          <div class="w-12 h-12 min-w-12 rounded-lg overflow-hidden bg-primary">
             <img v-if="localLibraryItem.coverPathSrc" :src="localLibraryItem.coverPathSrc" class="w-full h-full object-contain" />
           </div>
-          <div class="flex-grow px-2">
-            <p class="text-sm">{{ localLibraryItem.media.metadata.title }}</p>
-            <p class="text-xs text-fg-muted">{{ getLocalLibraryItemSubText(localLibraryItem) }}</p>
+          <div class="flex-grow px-3 min-w-0">
+            <p class="text-sm text-fg truncate">{{ localLibraryItem.media.metadata.title }}</p>
+            <p class="text-xs text-fg-muted mt-0.5">{{ getLocalLibraryItemSubText(localLibraryItem) }}</p>
           </div>
-          <div class="w-12 h-12 flex items-center justify-center">
-            <span class="material-symbols text-xl text-fg-muted">arrow_right</span>
-          </div>
+          <span class="material-symbols text-lg text-fg-muted">chevron_right</span>
         </nuxt-link>
       </template>
     </div>

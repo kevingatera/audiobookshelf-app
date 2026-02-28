@@ -5,16 +5,17 @@
         <p v-show="!selectedSeriesName" class="pt-1">{{ $formatNumber(totalEntities) }} {{ entityTitle }}</p>
         <p v-show="selectedSeriesName" class="ml-2 pt-1">{{ selectedSeriesName }} ({{ $formatNumber(totalEntities) }})</p>
         <div class="flex-grow" />
-        <span v-if="page == 'library' || seriesBookPage" class="material-symbols text-2xl px-2" @click="changeView">{{ !bookshelfListView ? 'view_list' : 'grid_view' }}</span>
+        <!-- UX-FIX: min 44px touch targets on toolbar icon buttons -->
+        <button v-if="page == 'library' || seriesBookPage" class="min-h-[44px] min-w-[44px] flex items-center justify-center" aria-label="Toggle view" @click="changeView"><span class="material-symbols text-2xl">{{ !bookshelfListView ? 'view_list' : 'grid_view' }}</span></button>
         <template v-if="page === 'library'">
-          <div class="relative flex items-center px-2">
-            <span class="material-symbols text-2xl" @click="showFilterModal = true">filter_alt</span>
-            <div v-show="hasFilters" class="absolute top-0 right-2 w-2 h-2 rounded-full bg-success border border-green-300 shadow-sm z-10 pointer-events-none" />
-          </div>
-          <span class="material-symbols text-2xl px-2" @click="showSortModal = true">sort</span>
+          <button class="relative min-h-[44px] min-w-[44px] flex items-center justify-center" aria-label="Filter" @click="showFilterModal = true">
+            <span class="material-symbols text-2xl">filter_alt</span>
+            <div v-show="hasFilters" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-success border border-green-300 shadow-sm z-10 pointer-events-none" />
+          </button>
+          <button class="min-h-[44px] min-w-[44px] flex items-center justify-center" aria-label="Sort" @click="showSortModal = true"><span class="material-symbols text-2xl">sort</span></button>
         </template>
-        <span v-if="seriesBookPage" class="material-symbols text-2xl px-2" @click="downloadSeries">download</span>
-        <span v-if="(page == 'library' && isBookLibrary) || seriesBookPage" class="material-symbols text-2xl px-2" @click="showMoreMenuDialog = true">more_vert</span>
+        <button v-if="seriesBookPage" class="min-h-[44px] min-w-[44px] flex items-center justify-center" aria-label="Download series" @click="downloadSeries"><span class="material-symbols text-2xl">download</span></button>
+        <button v-if="(page == 'library' && isBookLibrary) || seriesBookPage" class="min-h-[44px] min-w-[44px] flex items-center justify-center" aria-label="More options" @click="showMoreMenuDialog = true"><span class="material-symbols text-2xl">more_vert</span></button>
       </div>
     </div>
 
@@ -165,6 +166,6 @@ export default {
 
 <style>
 #bookshelf-toolbar {
-  box-shadow: 0px 5px 5px #11111155;
+  box-shadow: 0px 4px 8px rgba(18,16,14,0.3);
 }
 </style>
