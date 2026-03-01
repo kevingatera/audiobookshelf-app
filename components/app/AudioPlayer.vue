@@ -410,7 +410,7 @@ export default {
     },
     streamContainerStyle() {
       return {
-        '--collapsed-player-offset': this.showBottomNavInCollapsed ? 'calc(56px + env(safe-area-inset-bottom))' : '0px'
+        '--collapsed-player-offset': this.showBottomNavInCollapsed ? '56px' : '0px'
       }
     },
     minimizedTouchZoneHeight() {
@@ -1054,7 +1054,14 @@ export default {
 #playerTrack {
   transition: all 0.15s cubic-bezier(0.39, 0.575, 0.565, 1);
   transition-property: margin;
-  bottom: calc(var(--collapsed-player-offset) + 35px);
+  bottom: 35px;
+}
+
+#streamContainer:not(.fullscreen) #playerTrack {
+  left: 24px;
+  width: calc(100% - 48px);
+  padding-left: 0;
+  padding-right: 0;
 }
 .fullscreen #playerTrack {
   bottom: unset;
@@ -1069,7 +1076,7 @@ export default {
 }
 
 .cover-wrapper {
-  bottom: calc(var(--collapsed-player-offset) + 68px);
+  bottom: 68px;
   left: 24px;
   height: var(--cover-image-height-collapsed);
   width: var(--cover-image-width-collapsed);
@@ -1092,7 +1099,7 @@ export default {
   transform-origin: left bottom;
 
   width: var(--title-author-width-collapsed);
-  bottom: calc(var(--collapsed-player-offset) + 76px);
+  bottom: 76px;
   left: var(--title-author-left-offset-collapsed);
   text-align: left;
 }
@@ -1129,7 +1136,7 @@ export default {
   transition-property: width, bottom;
   width: 128px;
   padding-right: 24px;
-  bottom: calc(var(--collapsed-player-offset) + 70px);
+  bottom: 70px;
 }
 #playerControls .jump-icon {
   transition: all 0.15s cubic-bezier(0.39, 0.575, 0.565, 1);
