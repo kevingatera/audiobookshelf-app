@@ -62,6 +62,18 @@ export default {
       this.$store.commit('globals/setShowPlaylistsAddCreateModal', true)
     },
     async loadRecentEpisodes(page = 0) {
+      if (!this.currentLibraryId) {
+        this.recentEpisodes = []
+        this.totalEpisodes = 0
+        return
+      }
+
+      if (this.$store.getters['libraries/getCurrentLibraryMediaType'] !== 'podcast') {
+        this.recentEpisodes = []
+        this.totalEpisodes = 0
+        return
+      }
+
       this.loadedLibraryId = this.currentLibraryId
       this.processing = true
       const episodePayload = await this.$nativeHttp.get(`/api/libraries/${this.currentLibraryId}/recent-episodes?limit=50&page=${page}`).catch((error) => {
@@ -100,6 +112,11 @@ export default {
     }
   },
   mounted() {
+    if (this.$store.getters['libraries/getCurrentLibraryMediaType'] !== 'podcast') {
+      this.$router.replace('/bookshelf')
+      return
+    }
+
     this.loadRecentEpisodes()
     this.loadLocalPodcastLibraryItems()
     this.$eventBus.$on('library-changed', this.libraryChanged)

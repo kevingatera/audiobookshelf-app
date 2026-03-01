@@ -150,8 +150,9 @@ export default {
     },
     totalEntityCardWidth() {
       if (this.showBookshelfListView) return this.entityWidth
-      // Includes margin
-      return this.entityWidth + 28
+      // Includes gutter between cards. Keep this compact so phone widths can still render 2 columns.
+      const shelfGap = this.altViewEnabled ? 16 : 20
+      return this.entityWidth + shelfGap
     },
     altViewEnabled() {
       return this.$store.getters['getAltViewEnabled']
