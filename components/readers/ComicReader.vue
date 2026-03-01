@@ -23,7 +23,7 @@
       </div>
     </div>
 
-    <div class="fixed left-0 h-8 w-full bg-bg px-4 flex items-center text-fg-muted transition-transform" :class="showingToolbar ? 'translate-y-0' : isPlayerOpen ? 'translate-y-[64px]' : 'translate-y-32'" :style="{ bottom: isPlayerOpen ? '64px' : '0px' }">
+    <div class="fixed left-0 h-8 w-full bg-bg px-4 flex items-center text-fg-muted transition-transform" :class="showingToolbar ? 'translate-y-0' : isPlayerOpen ? 'translate-y-[120px]' : 'translate-y-32'" :style="{ bottom: isPlayerOpen ? '120px' : '0px' }">
       <div class="flex-grow" />
       <p class="text-xs">{{ page }} / {{ numPages }}</p>
     </div>
@@ -372,8 +372,8 @@ export default {
   max-height: 100%;
 }
 .reader-player-open #comic-reader {
-  height: calc(100% - 64px);
-  max-height: calc(100% - 64px);
+  height: calc(100% - 120px);
+  max-height: calc(100% - 120px);
 }
 
 .comicimg {

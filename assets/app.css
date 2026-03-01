@@ -39,15 +39,15 @@ textarea {
 }
 
 #content.playerOpen {
-  height: calc(100% - 48px - 64px);
-  min-height: calc(100% - 48px - 64px);
-  max-height: calc(100% - 48px - 64px);
+  height: calc(100% - 48px - 120px);
+  min-height: calc(100% - 48px - 120px);
+  max-height: calc(100% - 48px - 120px);
 }
 
 #content.playerOpen.hasBottomNav {
-  height: calc(100% - 48px - 64px - 56px - env(safe-area-inset-bottom));
-  min-height: calc(100% - 48px - 64px - 56px - env(safe-area-inset-bottom));
-  max-height: calc(100% - 48px - 64px - 56px - env(safe-area-inset-bottom));
+  height: calc(100% - 48px - 120px - 56px - env(safe-area-inset-bottom));
+  min-height: calc(100% - 48px - 120px - 56px - env(safe-area-inset-bottom));
+  max-height: calc(100% - 48px - 120px - 56px - env(safe-area-inset-bottom));
 }
 
 #bookshelf {
@@ -270,7 +270,7 @@ textarea {
 
 /* ── Mini player (slim) ── */
 .mini-player {
-  height: 64px;
+  height: 120px;
   background-color: rgb(var(--color-secondary));
   border-top: 1px solid rgb(var(--color-border) / var(--color-border-opacity));
   display: flex;

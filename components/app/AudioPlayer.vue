@@ -1,6 +1,12 @@
 <template>
   <!-- Main container - only shows when playback session exists, applies fullscreen/platform classes -->
-  <div v-if="playbackSession" id="streamContainer" class="fixed top-0 left-0 layout-wrapper right-0 z-50 pointer-events-none" :class="{ fullscreen: showFullscreen, 'ios-player': $platform === 'ios', 'web-player': $platform === 'web' }">
+  <div
+    v-if="playbackSession"
+    id="streamContainer"
+    class="fixed top-0 left-0 layout-wrapper right-0 z-50 pointer-events-none"
+    :class="{ fullscreen: showFullscreen, 'ios-player': $platform === 'ios', 'web-player': $platform === 'web' }"
+    :style="streamContainerStyle"
+  >
     <!-- Fullscreen overlays: colored background and menu overlays -->
     <div v-if="showFullscreen" class="w-full h-full z-10 absolute top-0 left-0 pointer-events-auto" :style="{ backgroundColor: coverRgb }">
       <!-- Background gradient for player -->
@@ -53,28 +59,6 @@
       </div>
     </div>
 
-    <!-- Minimized mini-player layout -->
-    <div v-if="!showFullscreen" class="mini-player-row absolute z-30 bottom-0 left-0 right-0 pointer-events-auto" :style="miniPlayerTintStyle" @click="clickContainer">
-      <div class="flex items-center gap-3 px-3 h-16 w-full">
-        <!-- Cover art 48x48 -->
-        <div class="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden">
-          <covers-book-cover v-if="libraryItem || localLibraryItemCoverSrc" :library-item="libraryItem" :download-cover="localLibraryItemCoverSrc" :width="48 / bookCoverAspectRatio" :book-cover-aspect-ratio="bookCoverAspectRatio" raw />
-        </div>
-        <!-- Title + Author -->
-        <div class="flex-1 min-w-0">
-          <p class="text-sm font-semibold text-fg truncate">{{ miniPlayerTitle }}</p>
-          <p class="text-xs text-fg-muted truncate">{{ authorName }}</p>
-        </div>
-        <!-- Play/Pause 44x44 touch target -->
-        <button class="flex-shrink-0 flex items-center justify-center" style="width: 44px; height: 44px" @click.stop="playPauseClick">
-          <span v-if="!isLoading" class="material-symbols fill text-fg" style="font-size: 2rem">{{ !isPlaying ? 'play_arrow' : 'pause' }}</span>
-          <widgets-spinner-icon v-else class="h-6 w-6" />
-        </button>
-      </div>
-      <!-- Mini-player progress bar -->
-      <div class="mini-player-progress" :style="{ width: miniPlayerProgressPercent + '%' }" />
-    </div>
-
     <!-- Title and author text -->
     <div class="title-author-texts absolute z-30 left-0 right-0 overflow-hidden" @click="clickTitleAndAuthor">
       <div ref="titlewrapper" class="overflow-hidden relative">
@@ -83,7 +67,7 @@
       <p class="author-text text-fg text-opacity-75 truncate">{{ authorName }}</p>
     </div>
 
-    <div id="playerContent" class="playerContainer w-full z-20 absolute bottom-0 left-0 right-0 p-2 pointer-events-auto transition-all" :style="{ backgroundColor: showFullscreen ? '' : 'transparent' }" @click="clickContainer">
+    <div id="playerContent" class="playerContainer w-full z-20 absolute bottom-0 left-0 right-0 p-2 pointer-events-auto transition-all" :style="{ backgroundColor: showFullscreen ? '' : coverRgb }" @click="clickContainer">
       <!-- Top controls bar - fullscreen only: bookmarks, speed, sleep timer, chapters -->
       <div v-if="showFullscreen" class="absolute bottom-4 left-0 right-0 w-full pb-4 pt-2 mx-auto px-6" style="max-width: 414px">
         <div class="flex items-center justify-between pointer-events-auto">
@@ -102,7 +86,7 @@
           <span class="material-symbols text-3xl text-fg cursor-pointer rounded-full p-2" :class="chapters.length ? 'text-opacity-75' : 'text-opacity-10'" style="background: rgba(var(--color-bg), 0.3)" @click="clickChaptersBtn">format_list_bulleted</span>
         </div>
       </div>
-      <div v-if="showFullscreen" class="w-full h-full absolute top-0 left-0 pointer-events-none" style="background: var(--gradient-minimized-audio-player); opacity: 0" />
+      <div v-else class="w-full h-full absolute top-0 left-0 pointer-events-none" style="background: var(--gradient-minimized-audio-player)" />
 
       <!-- Playback controls - jump buttons, play/pause, chapter navigation -->
       <div id="playerControls" class="absolute right-0 bottom-0 mx-auto" style="max-width: 414px">
@@ -438,19 +422,24 @@ export default {
 
       return this.playbackSession.localEpisodeId ? `${localLibraryItem.id}-${this.playbackSession.localEpisodeId}` : localLibraryItem.id
     },
-    miniPlayerTitle() {
-      return this.playbackSession?.displayTitle || this.mediaMetadata?.title || 'Title'
+    isOnConnectPage() {
+      return this.$route.path === '/connect'
     },
-    miniPlayerProgressPercent() {
-      if (!this.totalDuration) return 0
-      return Math.min(100, (this.currentTime / this.totalDuration) * 100)
+    isReaderOpen() {
+      return this.$store.state.showReader
     },
-    miniPlayerTintStyle() {
-      if (this.coverRgb && this.coverRgb !== 'rgb(55, 56, 56)') {
-        return { background: 'linear-gradient(90deg, ' + this.coverRgb.replace('rgb', 'rgba').replace(')', ', 0.05)') + ' 0%, transparent 50%)' }
+    showBottomNavInCollapsed() {
+      return !this.showFullscreen && !this.isReaderOpen && !this.isOnConnectPage
+    },
+    streamContainerStyle() {
+      return {
+        '--collapsed-player-offset': this.showBottomNavInCollapsed ? 'calc(56px + env(safe-area-inset-bottom))' : '0px'
       }
-      return {}
-    }
+    },
+    minimizedTouchZoneHeight() {
+      return this.showBottomNavInCollapsed ? 176 : 120
+    },
+    
   },
   methods: {
     showSyncsFailedDialog() {
@@ -735,7 +724,7 @@ export default {
       if (!e.changedTouches || this.$store.state.globals.isModalOpen) return
       const touchPosY = e.changedTouches[0].pageY
       // when minimized only listen to touchstart on the player
-      if (!this.showFullscreen && touchPosY < window.innerHeight - 64) return
+      if (!this.showFullscreen && touchPosY < window.innerHeight - this.minimizedTouchZoneHeight) return
 
       // for ios
       if (!this.showFullscreen && e.pageX < 20) {
@@ -1076,10 +1065,11 @@ export default {
   --cover-image-height-collapsed: 46px;
   --title-author-left-offset-collapsed: 80px;
   --title-author-width-collapsed: 40%;
+  --collapsed-player-offset: 0px;
 }
 
 .playerContainer {
-  height: 64px;
+  height: 120px;
 }
 .fullscreen .playerContainer {
   height: 200px;
@@ -1091,52 +1081,22 @@ export default {
   }
 }
 #playerContent {
-  box-shadow: none;
+  box-shadow: 0px -8px 16px rgba(18, 16, 14, 0.45);
+  border-top: 1px solid rgb(var(--color-border) / var(--color-border-opacity));
 }
 .fullscreen #playerContent {
   box-shadow: none;
+  border-top: 0;
 }
 
-/* Mini-player row (collapsed) */
-.mini-player-row {
-  height: 64px;
-  background-color: rgb(var(--color-secondary));
-  border-top: 1px solid rgb(var(--color-border) / var(--color-border-opacity));
-  overflow: hidden;
-}
-.mini-player-row .mini-player-progress {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  height: 2px;
-  background-color: #1ad691;
-  border-radius: 1px;
-  transition: width 1s linear;
-}
-
-/* Hide the old cover/title/controls in collapsed mode */
-#streamContainer:not(.fullscreen) .cover-wrapper {
-  display: none;
-}
-#streamContainer:not(.fullscreen) .title-author-texts {
-  display: none;
-}
-#streamContainer:not(.fullscreen) #playerControls {
-  display: none;
-}
-#streamContainer:not(.fullscreen) #playerTrack {
-  display: none;
-}
-
-/* Hide mini-player row in fullscreen */
-.fullscreen .mini-player-row {
-  display: none;
+#streamContainer:not(.fullscreen) #playerContent {
+  bottom: var(--collapsed-player-offset);
 }
 
 #playerTrack {
   transition: all 0.15s cubic-bezier(0.39, 0.575, 0.565, 1);
   transition-property: margin;
-  bottom: 35px;
+  bottom: calc(var(--collapsed-player-offset) + 35px);
   max-width: 100%;
 }
 .fullscreen #playerTrack {
@@ -1152,7 +1112,7 @@ export default {
 }
 
 .cover-wrapper {
-  bottom: 68px;
+  bottom: calc(var(--collapsed-player-offset) + 68px);
   left: 24px;
   height: var(--cover-image-height-collapsed);
   width: var(--cover-image-width-collapsed);
@@ -1207,7 +1167,7 @@ export default {
   transform-origin: left bottom;
 
   width: var(--title-author-width-collapsed);
-  bottom: 76px;
+  bottom: calc(var(--collapsed-player-offset) + 76px);
   left: var(--title-author-left-offset-collapsed);
   text-align: left;
 }
@@ -1254,7 +1214,7 @@ export default {
   transition-property: width, bottom;
   width: 128px;
   padding-right: 24px;
-  bottom: 70px;
+  bottom: calc(var(--collapsed-player-offset) + 70px);
 }
 #playerControls .jump-icon {
   transition: all 0.15s cubic-bezier(0.39, 0.575, 0.565, 1);
