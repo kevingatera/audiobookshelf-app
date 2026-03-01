@@ -153,3 +153,6 @@ Last updated: 2026-02-28 (night, UI modernization + homelab build prep)
   - `components/bookshelf/Shelf.vue`: corrected class typo `categoryPlacardtransform` -> `categoryPlacard transform` for legacy shelf placard positioning.
 - Verification artifact:
   - Item metadata wrapping fixed: `screenshots/qa/fix-item-metadata-wrap.png`
+- Follow-up release after this pass:
+  - `homelab-book-requests-debug-20260301-r9`
+  - URL: `https://github.com/kevingatera/audiobookshelf-app/releases/tag/homelab-book-requests-debug-20260301-r9`
