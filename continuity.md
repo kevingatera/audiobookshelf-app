@@ -141,3 +141,15 @@ Last updated: 2026-02-28 (night, UI modernization + homelab build prep)
   - Pre-fix one-column library: `screenshots/qa/tmp-library.png`
   - Post-fix two-column library: `screenshots/qa/fix-library-reset.png`
   - Settings spacing check: `screenshots/qa/fix-settings-scrolled.png`
+
+## Visual QA iteration (2026-03-01, follow-up)
+
+- Published interim test release for user validation:
+  - `homelab-book-requests-debug-20260301-r8`
+  - URL: `https://github.com/kevingatera/audiobookshelf-app/releases/tag/homelab-book-requests-debug-20260301-r8`
+- Additional UI pass (same design language, no re-theme):
+  - `pages/item/_id/index.vue`: removed `whitespace-nowrap` from metadata link rows (series/narrators/genres/tags) and enabled wrapping with `break-words`.
+    - Fixes clipped metadata text on narrow screens.
+  - `components/bookshelf/Shelf.vue`: corrected class typo `categoryPlacardtransform` -> `categoryPlacard transform` for legacy shelf placard positioning.
+- Verification artifact:
+  - Item metadata wrapping fixed: `screenshots/qa/fix-item-metadata-wrap.png`
