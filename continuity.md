@@ -172,3 +172,13 @@ Last updated: 2026-02-28 (night, UI modernization + homelab build prep)
     - `components/readers/PdfReader.vue`
     - `pages/localMedia/item/_id.vue`
 - Build verification: `npm run build` passes.
+
+## Mini-player follow-up tuning (2026-03-01, same day)
+
+- User feedback after r10: collapsed controls appeared too high, mini-player sat with too much gap above nav, and collapsed seekbar felt too wide.
+- Adjusted `components/app/AudioPlayer.vue` collapsed layout math:
+  - Removed double-offset behavior (inner elements no longer add nav offset on top of container offset).
+  - Kept nav lift only at `#playerContent` level in collapsed mode.
+  - Tightened collapsed seekbar width (`left: 24px`, `width: calc(100% - 48px)`) to match compact row feel.
+  - Reduced collapsed offset var to `56px` for nav-aligned placement.
+- Build verification: `npm run build` passes.
