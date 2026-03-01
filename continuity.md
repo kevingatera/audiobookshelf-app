@@ -156,3 +156,19 @@ Last updated: 2026-02-28 (night, UI modernization + homelab build prep)
 - Follow-up release after this pass:
   - `homelab-book-requests-debug-20260301-r9`
   - URL: `https://github.com/kevingatera/audiobookshelf-app/releases/tag/homelab-book-requests-debug-20260301-r9`
+
+## Mini-player regression fix (2026-03-01, later)
+
+- User reported collapsed player bar regressed and was sitting too low, overlapping/hiding bottom nav.
+- Restored collapsed player UX from upstream as baseline in `components/app/AudioPlayer.vue`, then re-skinned within current design language:
+  - Removed the custom 64px mini-row replacement.
+  - Reinstated original collapsed structure (cover/title/controls/track) and cover-tinted collapsed background.
+  - Added bottom offset support so collapsed player sits above bottom nav (`56px + safe-area`) when nav is visible.
+- Updated layout spacing to match restored collapsed player footprint:
+  - `assets/app.css`: player-open content height now subtracts 120px (instead of 64px).
+  - Reader/local media bottom offsets updated from 64px -> 120px in:
+    - `components/readers/ComicReader.vue`
+    - `components/readers/EpubReader.vue`
+    - `components/readers/PdfReader.vue`
+    - `pages/localMedia/item/_id.vue`
+- Build verification: `npm run build` passes.
