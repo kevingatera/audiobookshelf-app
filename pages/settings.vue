@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full h-full overflow-y-auto pb-8" style="-webkit-overflow-scrolling: touch">
+  <div class="w-full h-full overflow-y-auto pb-24" style="-webkit-overflow-scrolling: touch">
     <!-- Appearance -->
     <p class="text-xs font-semibold text-fg-muted uppercase tracking-wider px-4 pt-6 pb-2">{{ $strings.HeaderUserInterfaceSettings }}</p>
     <div class="bg-secondary rounded-xl mx-4 mb-4 overflow-hidden">
