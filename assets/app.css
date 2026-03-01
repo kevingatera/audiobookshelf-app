@@ -33,9 +33,9 @@ textarea {
 
 /* When bottom nav is visible, subtract its height too */
 #content.hasBottomNav {
-  height: calc(100% - 48px - 56px);
-  min-height: calc(100% - 48px - 56px);
-  max-height: calc(100% - 48px - 56px);
+  height: calc(100% - 48px - 56px - env(safe-area-inset-bottom));
+  min-height: calc(100% - 48px - 56px - env(safe-area-inset-bottom));
+  max-height: calc(100% - 48px - 56px - env(safe-area-inset-bottom));
 }
 
 #content.playerOpen {
@@ -45,14 +45,14 @@ textarea {
 }
 
 #content.playerOpen.hasBottomNav {
-  height: calc(100% - 48px - 64px - 56px);
-  min-height: calc(100% - 48px - 64px - 56px);
-  max-height: calc(100% - 48px - 64px - 56px);
+  height: calc(100% - 48px - 64px - 56px - env(safe-area-inset-bottom));
+  min-height: calc(100% - 48px - 64px - 56px - env(safe-area-inset-bottom));
+  max-height: calc(100% - 48px - 64px - 56px - env(safe-area-inset-bottom));
 }
 
 #bookshelf {
-  height: calc(100% - 48px);
-  min-height: calc(100% - 48px);
+  height: 100%;
+  min-height: 100%;
 }
 
 /* ── Shadows (warm-tinted) ── */

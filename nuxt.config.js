@@ -39,6 +39,8 @@ export default {
 
   axios: {},
 
+  serverMiddleware: process.env.NODE_ENV !== 'production' ? ['~/serverMiddleware/proxy.js'] : [],
+
   build: {
     postcss: {
       postcssOptions: {

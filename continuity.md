@@ -121,3 +121,23 @@ Last updated: 2026-02-28 (night, UI modernization + homelab build prep)
 - Keep first-paint path minimal in `pages/bookshelf/index.vue`.
 - If RSS metadata must be richer, keep it as deferred hydration after first paint.
 - Consider a small server endpoint for visible-shelf-only data if further latency reduction is needed.
+
+## Visual QA iteration (2026-02-28, late)
+
+- Added a dev-only proxy path in Nuxt for browser QA against live server:
+  - `nuxt.config.js` now wires `serverMiddleware/proxy.js` in non-production.
+  - Proxy target defaults to `https://audiobooks.deployitwith.me` and forwards API/auth/socket paths only.
+- Ran screenshot pass against live data (mobile viewport) and confirmed key layout issues:
+  - `/bookshelf/library` was rendering as single-column in classic shelf mode.
+  - Bottom chrome spacing could be tight on safe-area devices.
+- Implemented layout fixes:
+  - `components/bookshelf/LazyBookshelf.vue`: reduced non-list card gutter width contribution so phone widths can keep two columns.
+  - `mixins/bookshelfCardsHelpers.js`: aligned card x-offset with new gutter math.
+  - `assets/app.css`: content height calc now subtracts `env(safe-area-inset-bottom)` when bottom nav is visible (with and without mini-player).
+  - `assets/app.css`: `#bookshelf` uses full parent height (removed extra `-48px` subtraction).
+  - `pages/settings.vue`: increased bottom padding (`pb-24`) to keep lower settings rows clear of bottom chrome.
+  - `pages/bookshelf/latest.vue`: added guards to avoid invalid recent-episodes requests when not in a podcast library (prevents empty/error state on non-podcast libraries).
+- Verification artifacts:
+  - Pre-fix one-column library: `screenshots/qa/tmp-library.png`
+  - Post-fix two-column library: `screenshots/qa/fix-library-reset.png`
+  - Settings spacing check: `screenshots/qa/fix-settings-scrolled.png`
