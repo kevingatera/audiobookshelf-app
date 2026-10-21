@@ -726,6 +726,12 @@ export default {
       const touchPosY = e.changedTouches[0].pageY
       // when minimized only listen to touchstart on the player
       if (!this.showFullscreen && touchPosY < window.innerHeight - this.minimizedTouchZoneHeight) return
+      // the bottom nav sits inside that zone; swipes starting on it should not open the player
+      if (this.showBottomNavInCollapsed) {
+        const navEl = document.querySelector('.bottom-nav')
+        const navTop = navEl ? navEl.getBoundingClientRect().top : window.innerHeight - 56
+        if (e.changedTouches[0].clientY > navTop) return
+      }
 
       // for ios
       if (!this.showFullscreen && e.pageX < 20) {
