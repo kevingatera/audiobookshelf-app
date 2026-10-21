@@ -279,10 +279,10 @@ export default {
             } else if (code === 'ALREADY_TRACKED_IN_READARR') {
               this.$toast.info(this.$strings.MessageBookAlreadyTracked)
             } else {
-              this.$toast.error(this.$strings.ToastFailedToUpdate)
+              this.$toast.error(this.$strings.ToastBookRequestFailed)
             }
           } else {
-            this.$toast.error(this.$strings.ToastFailedToUpdate)
+            this.$toast.error(this.$strings.ToastBookRequestFailed)
           }
           return null
         })
