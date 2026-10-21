@@ -1119,7 +1119,7 @@ export default {
 }
 
 .cover-wrapper {
-  bottom: 68px;
+  bottom: calc(var(--collapsed-player-offset) + 68px);
   left: 24px;
   height: var(--cover-image-height-collapsed);
   width: var(--cover-image-width-collapsed);
@@ -1174,7 +1174,7 @@ export default {
   transform-origin: left bottom;
 
   width: var(--title-author-width-collapsed);
-  bottom: 76px;
+  bottom: calc(var(--collapsed-player-offset) + 76px);
   left: var(--title-author-left-offset-collapsed);
   text-align: left;
 }
