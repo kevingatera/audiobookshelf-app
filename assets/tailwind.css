@@ -41,7 +41,7 @@
     --radius-full: 9999px;
 
     /* ── Bottom nav ── */
-    --bottom-nav-height: 56px;
+    --bottom-nav-height: calc(56px + env(safe-area-inset-bottom));
     --appbar-height: 48px;
 
     /* ── Transitions ── */

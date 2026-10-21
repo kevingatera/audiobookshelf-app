@@ -433,7 +433,7 @@ export default {
     },
     streamContainerStyle() {
       return {
-        '--collapsed-player-offset': this.showBottomNavInCollapsed ? '56px' : '0px'
+        '--collapsed-player-offset': this.showBottomNavInCollapsed ? 'calc(56px + env(safe-area-inset-bottom))' : '0px'
       }
     },
     minimizedTouchZoneHeight() {
