@@ -180,5 +180,5 @@ Last updated: 2026-02-28 (night, UI modernization + homelab build prep)
   - `#playerContent` gets the nav lift from its `bottom`. `#playerControls` and `#playerTrack` stay relative to it.
   - `.cover-wrapper` and `.title-author-texts` are positioned against `#streamContainer`, so they add `--collapsed-player-offset` to their own collapsed `bottom` values.
   - Tightened collapsed seekbar width (`left: 24px`, `width: calc(100% - 48px)`) to match compact row feel.
-  - Reduced collapsed offset var to `56px` for nav-aligned placement.
+  - Collapsed offset var is `calc(56px + env(safe-area-inset-bottom))`, matching `.bottom-nav` height and the `#content.hasBottomNav` inset.
 - Build verification: `npm run build` passes.
