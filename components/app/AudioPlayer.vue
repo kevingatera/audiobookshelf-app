@@ -634,6 +634,7 @@ export default {
         percentDone = currChapTime / this.currentChapterDuration
         bufferedPercent = Math.max(0, Math.min(1, (this.bufferedTime - this.currentChapter.start) / this.currentChapterDuration))
       }
+      percentDone = Math.max(0, Math.min(1, percentDone))
 
       const playedPercent = percentDone * 100
       const bufferedPercentWidth = bufferedPercent * 100
