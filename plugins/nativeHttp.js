@@ -1,5 +1,14 @@
 import { CapacitorHttp } from '@capacitor/core'
 
+// Keeps the status and body on the error so callers can branch on them (for example a 409 conflict).
+function httpError(res) {
+  const message = typeof res.data === 'string' ? res.data : `HTTP ${res.status}`
+  const error = new Error(message)
+  error.status = res.status
+  error.data = res.data
+  return error
+}
+
 export default function ({ store, $db, $socket }, inject) {
   const nativeHttp = {
     async request(method, _url, data, options = {}) {
@@ -43,8 +52,7 @@ export default function ({ store, $db, $socket }, inject) {
         }
         if (res.status >= 400) {
           console.error(`[nativeHttp] ${res.status} status for url "${url}"`)
-          const message = typeof res.data === 'string' ? res.data : `HTTP ${res.status}`
-          throw new Error(message)
+          throw httpError(res)
         }
         return res.data
       })
@@ -101,8 +109,7 @@ export default function ({ store, $db, $socket }, inject) {
 
         if (retryResponse.status >= 400) {
           console.error(`[nativeHttp] Retry request failed with status ${retryResponse.status}`)
-          const message = typeof retryResponse.data === 'string' ? retryResponse.data : `HTTP ${retryResponse.status}`
-          throw new Error(message)
+          throw httpError(retryResponse)
         }
 
         return retryResponse.data
