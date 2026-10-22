@@ -31,9 +31,7 @@
         </div>
       </div>
     </div>
-    <div v-else-if="!shelves.length && isLoading && !attemptingConnection" class="absolute top-0 left-0 z-50 w-full h-full flex items-center justify-center">
-      <ui-loading-indicator :text="$strings.MessageLoading" />
-    </div>
+    <bookshelf-loading-skeleton v-else-if="!shelves.length && isLoading && !attemptingConnection" />
   </div>
 </template>
 
