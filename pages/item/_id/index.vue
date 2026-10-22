@@ -86,10 +86,10 @@
         <!-- metadata -->
         <div id="metadata" class="grid gap-2 my-2" style>
           <div v-if="podcastAuthor || bookAuthors?.length" class="text-fg-muted uppercase text-sm">{{ $strings.LabelAuthor }}</div>
-          <div v-if="podcastAuthor" class="text-sm">{{ podcastAuthor }}</div>
-          <div v-else-if="bookAuthors?.length" class="text-sm">
+          <div v-if="podcastAuthor" class="text-sm break-words min-w-0">{{ podcastAuthor }}</div>
+          <div v-else-if="bookAuthors?.length" class="text-sm break-words min-w-0">
             <template v-for="(author, index) in bookAuthors">
-              <nuxt-link :key="author.id" :to="`/bookshelf/library?filter=authors.${$encode(author.id)}`" class="underline whitespace-nowrap">{{ author.name }}</nuxt-link
+              <nuxt-link :key="author.id" :to="`/bookshelf/library?filter=authors.${$encode(author.id)}`" class="underline">{{ author.name }}</nuxt-link
               ><span :key="`${author.id}-comma`" v-if="index < bookAuthors.length - 1">, </span>
             </template>
           </div>
@@ -98,9 +98,9 @@
           <div v-if="podcastType" class="text-sm capitalize">{{ podcastType }}</div>
 
           <div v-if="series?.length" class="text-fg-muted uppercase text-sm">{{ $strings.LabelSeries }}</div>
-          <div v-if="series?.length" class="text-sm">
+          <div v-if="series?.length" class="text-sm break-words min-w-0">
             <template v-for="(series, index) in seriesList">
-              <nuxt-link :key="series.id" :to="`/bookshelf/series/${series.id}`" class="underline whitespace-nowrap">{{ series.text }}</nuxt-link
+              <nuxt-link :key="series.id" :to="`/bookshelf/series/${series.id}`" class="underline">{{ series.text }}</nuxt-link
               ><span :key="`${series.id}-comma`" v-if="index < seriesList.length - 1">, </span>
             </template>
           </div>
@@ -109,25 +109,25 @@
           <div v-if="numTracks" class="text-sm">{{ $elapsedPretty(duration) }}</div>
 
           <div v-if="narrators?.length" class="text-fg-muted uppercase text-sm">{{ $strings.LabelNarrators }}</div>
-          <div v-if="narrators?.length" class="text-sm">
+          <div v-if="narrators?.length" class="text-sm break-words min-w-0">
             <template v-for="(narrator, index) in narrators">
-              <nuxt-link :key="narrator" :to="`/bookshelf/library?filter=narrators.${$encode(narrator)}`" class="underline whitespace-nowrap">{{ narrator }}</nuxt-link
+              <nuxt-link :key="narrator" :to="`/bookshelf/library?filter=narrators.${$encode(narrator)}`" class="underline">{{ narrator }}</nuxt-link
               ><span :key="index" v-if="index < narrators.length - 1">, </span>
             </template>
           </div>
 
           <div v-if="genres.length" class="text-fg-muted uppercase text-sm">{{ $strings.LabelGenres }}</div>
-          <div v-if="genres.length" class="text-sm">
+          <div v-if="genres.length" class="text-sm break-words min-w-0">
             <template v-for="(genre, index) in genres">
-              <nuxt-link :key="genre" :to="`/bookshelf/library?filter=genres.${$encode(genre)}`" class="underline whitespace-nowrap">{{ genre }}</nuxt-link
+              <nuxt-link :key="genre" :to="`/bookshelf/library?filter=genres.${$encode(genre)}`" class="underline">{{ genre }}</nuxt-link
               ><span :key="index" v-if="index < genres.length - 1">, </span>
             </template>
           </div>
 
           <div v-if="tags.length" class="text-fg-muted uppercase text-sm">{{ $strings.LabelTags }}</div>
-          <div v-if="tags.length" class="text-sm">
+          <div v-if="tags.length" class="text-sm break-words min-w-0">
             <template v-for="(tag, index) in tags">
-              <nuxt-link :key="tag" :to="`/bookshelf/library?filter=tags.${$encode(tag)}`" class="underline whitespace-nowrap">{{ tag }}</nuxt-link
+              <nuxt-link :key="tag" :to="`/bookshelf/library?filter=tags.${$encode(tag)}`" class="underline">{{ tag }}</nuxt-link
               ><span :key="index" v-if="index < tags.length - 1">, </span>
             </template>
           </div>

@@ -148,10 +148,14 @@ export default {
       }
       return this.entityHeight + 40
     },
+    // Gap between cards. Shared by the grid width and the card offset helper.
+    cardGutter() {
+      return 24
+    },
     totalEntityCardWidth() {
       if (this.showBookshelfListView) return this.entityWidth
-      // Includes margin
-      return this.entityWidth + 24
+      // Includes gutter
+      return this.entityWidth + this.cardGutter
     },
     altViewEnabled() {
       return this.$store.getters['getAltViewEnabled']
