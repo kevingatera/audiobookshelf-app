@@ -1,9 +1,15 @@
 <template>
   <nav v-show="show" class="bottom-nav fixed inset-x-0 bottom-0 z-10 flex bg-primary" @touchstart.stop>
-    <nuxt-link v-for="tab in tabs" :key="tab.to" :to="tab.to" class="flex-1 flex flex-col items-center justify-center" :class="tab.isActive ? 'text-accent' : 'text-fg-muted'" :aria-current="tab.isActive ? 'page' : null">
-      <span class="material-symbols text-2xl leading-none" :class="{ fill: tab.isActive }">{{ tab.icon }}</span>
-      <span class="text-xs leading-none mt-1">{{ tab.label }}</span>
-    </nuxt-link>
+    <template v-for="tab in tabs">
+      <button v-if="tab.action" :key="tab.label" type="button" class="flex-1 flex flex-col items-center justify-center text-fg-muted" @click="tab.action">
+        <span class="material-symbols text-2xl leading-none">{{ tab.icon }}</span>
+        <span class="text-xs leading-none mt-1">{{ tab.label }}</span>
+      </button>
+      <nuxt-link v-else :key="tab.label" :to="tab.to" class="flex-1 flex flex-col items-center justify-center" :class="tab.isActive ? 'text-accent' : 'text-fg-muted'" :aria-current="tab.isActive ? 'page' : null">
+        <span class="material-symbols text-2xl leading-none" :class="{ fill: tab.isActive }">{{ tab.icon }}</span>
+        <span class="text-xs leading-none mt-1">{{ tab.label }}</span>
+      </nuxt-link>
+    </template>
   </nav>
 </template>
 
@@ -28,8 +34,13 @@ export default {
         { to: '/bookshelf/library', label: this.$strings.ButtonLibrary, icon: this.libraryIcon, isActive: LIBRARY_PATHS.some((p) => path.startsWith(p)) },
         { to: '/search', label: this.$strings.ButtonSearch, icon: 'search', isActive: path.startsWith('/search') },
         { to: '/downloads', label: this.$strings.HeaderDownloads, icon: 'download', isActive: path.startsWith('/downloads') || path.startsWith('/downloading') },
-        { to: '/settings', label: this.$strings.LabelMore, icon: 'more_horiz', isActive: path.startsWith('/settings') || path.startsWith('/account') }
+        { label: this.$strings.LabelMore, icon: 'more_horiz', action: this.openSideDrawer }
       ]
+    }
+  },
+  methods: {
+    openSideDrawer() {
+      this.$store.commit('setShowSideDrawer', true)
     }
   }
 }
