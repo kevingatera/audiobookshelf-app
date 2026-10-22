@@ -61,7 +61,7 @@
       <p class="author-text text-fg text-opacity-75 truncate">{{ authorName }}</p>
     </div>
 
-    <div id="playerContent" class="playerContainer w-full z-20 absolute bottom-0 left-0 right-0 p-2 pointer-events-auto transition-all" :style="{ backgroundColor: showFullscreen ? '' : coverRgb }" @click="clickContainer">
+    <div ref="playerContent" id="playerContent" class="playerContainer w-full z-20 absolute bottom-0 left-0 right-0 p-2 pointer-events-auto transition-all" :style="{ backgroundColor: showFullscreen ? '' : coverRgb }" @click="clickContainer">
       <!-- Top controls bar - fullscreen only: bookmarks, speed, sleep timer, chapters -->
       <div v-if="showFullscreen" class="absolute bottom-4 left-0 right-0 w-full pb-4 pt-2 mx-auto px-6" style="max-width: 414px">
         <div class="flex items-center justify-between pointer-events-auto">
@@ -700,7 +700,10 @@ export default {
       if (!e.changedTouches || this.$store.state.globals.isModalOpen) return
       const touchPosY = e.changedTouches[0].pageY
       // when minimized only listen to touchstart on the player
-      if (!this.showFullscreen && touchPosY < window.innerHeight - 120) return
+      if (!this.showFullscreen) {
+        const playerTop = this.$refs.playerContent ? this.$refs.playerContent.getBoundingClientRect().top : window.innerHeight - 120
+        if (e.changedTouches[0].clientY < playerTop) return
+      }
 
       // for ios
       if (!this.showFullscreen && e.pageX < 20) {
@@ -1041,6 +1044,7 @@ export default {
   --cover-image-height-collapsed: 46px;
   --title-author-left-offset-collapsed: 80px;
   --title-author-width-collapsed: 40%;
+  --collapsed-player-offset: 0px;
 }
 
 .playerContainer {
@@ -1057,6 +1061,7 @@ export default {
 }
 #playerContent {
   box-shadow: 0px -8px 8px #11111155;
+  bottom: var(--collapsed-player-offset);
 }
 .fullscreen #playerContent {
   box-shadow: none;
@@ -1073,7 +1078,7 @@ export default {
 }
 
 .cover-wrapper {
-  bottom: 68px;
+  bottom: calc(var(--collapsed-player-offset) + 68px);
   left: 24px;
   height: var(--cover-image-height-collapsed);
   width: var(--cover-image-width-collapsed);
@@ -1128,7 +1133,7 @@ export default {
   transform-origin: left bottom;
 
   width: var(--title-author-width-collapsed);
-  bottom: 76px;
+  bottom: calc(var(--collapsed-player-offset) + 76px);
   left: var(--title-author-left-offset-collapsed);
   text-align: left;
 }
