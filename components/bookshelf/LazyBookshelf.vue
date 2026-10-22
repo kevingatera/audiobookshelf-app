@@ -148,9 +148,9 @@ export default {
       }
       return this.entityHeight + 40
     },
-    // Gap between cards. Alt view is tighter so phone widths still fit two columns.
+    // Gap between cards. Shared by the grid width and the card offset helper.
     cardGutter() {
-      return this.altViewEnabled ? 16 : 24
+      return 24
     },
     totalEntityCardWidth() {
       if (this.showBookshelfListView) return this.entityWidth
