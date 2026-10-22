@@ -607,7 +607,7 @@ export default {
 
       if (this.playerSettings.useChapterTrack && this.currentChapter) {
         const currChapTime = currentTimeToUse - this.currentChapter.start
-        percentDone = currChapTime / this.currentChapterDuration
+        percentDone = Math.max(0, Math.min(1, currChapTime / this.currentChapterDuration))
         bufferedPercent = Math.max(0, Math.min(1, (this.bufferedTime - this.currentChapter.start) / this.currentChapterDuration))
       }
 

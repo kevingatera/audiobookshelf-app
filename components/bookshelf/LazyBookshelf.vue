@@ -148,10 +148,14 @@ export default {
       }
       return this.entityHeight + 40
     },
+    // Gap between cards. Alt view is tighter so phone widths still fit two columns.
+    cardGutter() {
+      return this.altViewEnabled ? 16 : 24
+    },
     totalEntityCardWidth() {
       if (this.showBookshelfListView) return this.entityWidth
-      // Includes margin
-      return this.entityWidth + 24
+      // Includes gutter
+      return this.entityWidth + this.cardGutter
     },
     altViewEnabled() {
       return this.$store.getters['getAltViewEnabled']
