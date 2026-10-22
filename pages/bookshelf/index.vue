@@ -43,6 +43,7 @@ export default {
   data() {
     return {
       shelves: [],
+      categoriesFetchToken: 0,
       isFirstNetworkConnection: true,
       lastServerFetch: 0,
       lastServerFetchLibraryId: null,
@@ -234,18 +235,28 @@ export default {
       }
 
       this.isLoading = true
+      // Later fetches supersede this one, so drop any response that arrives after them
+      const fetchToken = ++this.categoriesFetchToken
+
+      // Start the server request before the local DB read so the read does not delay it
+      const serverRequest = isConnectedToServerWithInternet
+        ? this.$nativeHttp.get(`/api/libraries/${this.currentLibraryId}/personalized?minified=1&include=rssfeed,numEpisodesIncomplete`, { connectTimeout: 10000 }).catch((error) => {
+            console.error('[categories] Failed to fetch categories', error)
+            return []
+          })
+        : null
 
       // Set local library items first
-      this.localLibraryItems = await this.$db.getLocalLibraryItems()
+      const localLibraryItems = await this.$db.getLocalLibraryItems()
+      if (fetchToken !== this.categoriesFetchToken) return
+      this.localLibraryItems = localLibraryItems
       const localCategories = this.getLocalMediaItemCategories()
       this.shelves = localCategories
       console.log('[categories] Local shelves set', this.shelves.length, this.lastLocalFetch)
 
-      if (isConnectedToServerWithInternet) {
-        const categories = await this.$nativeHttp.get(`/api/libraries/${this.currentLibraryId}/personalized?minified=1&include=rssfeed,numEpisodesIncomplete`, { connectTimeout: 10000 }).catch((error) => {
-          console.error('[categories] Failed to fetch categories', error)
-          return []
-        })
+      if (serverRequest) {
+        const categories = await serverRequest
+        if (fetchToken !== this.categoriesFetchToken) return
         if (!categories.length) {
           // Failed to load categories so use local shelves
           console.warn(`[categories] Failed to get server categories so using local categories`)
@@ -344,6 +355,7 @@ export default {
     this.fetchCategories()
   },
   beforeDestroy() {
+    this.categoriesFetchToken++
     this.removeListeners()
   }
 }
