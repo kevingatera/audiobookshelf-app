@@ -175,6 +175,16 @@
       </div>
     </template>
 
+    <!-- Settings backup -->
+    <template v-if="isAndroid">
+      <p class="uppercase text-xs font-semibold text-fg-muted mb-2 mt-10">{{ $strings.HeaderSettingsBackup }}</p>
+      <p class="text-sm text-fg-muted mb-3">{{ $strings.MessageSettingsBackupHelp }}</p>
+      <div class="flex items-center gap-3 py-3">
+        <ui-btn small :loading="backupProcessing" @click="exportSettingsBackup">{{ $strings.ButtonExportSettings }}</ui-btn>
+        <ui-btn small :loading="backupProcessing" @click="importSettingsBackup">{{ $strings.ButtonImportSettings }}</ui-btn>
+      </div>
+    </template>
+
     <div v-show="loading" class="w-full h-full absolute top-0 left-0 flex items-center justify-center z-10">
       <ui-loading-indicator />
     </div>
@@ -194,6 +204,7 @@ export default {
   data() {
     return {
       loading: false,
+      backupProcessing: false,
       deviceData: null,
       showMoreMenuDialog: false,
       showSleepTimerLengthModal: false,
@@ -353,6 +364,9 @@ export default {
     },
     isiOS() {
       return this.$platform === 'ios'
+    },
+    isAndroid() {
+      return this.$platform === 'android'
     },
     jumpForwardSecondsOptions() {
       return this.$store.state.globals.jumpForwardSecondsOptions || []
@@ -671,6 +685,43 @@ export default {
 
       this.settings.androidAutoBrowseLimitForGrouping = deviceSettings.androidAutoBrowseLimitForGrouping
       this.settings.androidAutoBrowseSeriesSequenceOrder = deviceSettings.androidAutoBrowseSeriesSequenceOrder || 'ASC'
+    },
+    async exportSettingsBackup() {
+      await this.$hapticsImpact()
+      this.backupProcessing = true
+      try {
+        const result = await this.$db.exportSettingsBackup()
+        if (!result.cancelled) this.$toast.success(this.$strings.ToastSettingsBackupExported)
+      } catch (error) {
+        console.error('[settings] Failed to export settings backup', error)
+        this.$toast.error(this.$strings.ToastSettingsBackupFailed)
+      }
+      this.backupProcessing = false
+    },
+    async importSettingsBackup() {
+      await this.$hapticsImpact()
+      const { value } = await Dialog.confirm({
+        title: this.$strings.ButtonImportSettings,
+        message: this.$strings.MessageSettingsBackupImportConfirm
+      })
+      if (!value) return
+
+      this.backupProcessing = true
+      try {
+        const result = await this.$db.importSettingsBackup()
+        if (!result.cancelled) {
+          this.deviceData = result.deviceData
+          this.$store.commit('setDeviceData', result.deviceData)
+          this.setDeviceSettings()
+          this.$setOrientationLock(this.settings.lockOrientation)
+          this.$setLanguageCode(this.settings.languageCode)
+          this.$toast.success(this.$getString('ToastSettingsBackupImported', [result.serversAdded]))
+        }
+      } catch (error) {
+        console.error('[settings] Failed to import settings backup', error)
+        this.$toast.error(error.code === 'INVALID_BACKUP' ? this.$strings.ToastSettingsBackupInvalid : this.$strings.ToastSettingsBackupFailed)
+      }
+      this.backupProcessing = false
     },
     async init() {
       this.loading = true
