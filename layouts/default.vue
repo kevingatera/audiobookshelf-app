@@ -127,6 +127,11 @@ export default {
     },
     async attemptConnection() {
       console.warn('[default] attemptConnection')
+      if (!this.networkConnected) {
+        console.warn('[default] No network connection')
+        AbsLogger.info({ tag: 'default', message: 'attemptConnection: No network connection' })
+        return
+      }
       if (this.attemptingConnection) {
         return
       }
@@ -146,18 +151,6 @@ export default {
         // No last server config set
         this.attemptingConnection = false
         AbsLogger.info({ tag: 'default', message: 'attemptConnection: No last server config set' })
-
-        // First-run/no-config UX: go straight to connect screen
-        if (this.$route.path !== '/connect') {
-          this.$router.replace('/connect')
-        }
-        return
-      }
-
-      if (!this.networkConnected) {
-        this.attemptingConnection = false
-        console.warn('[default] No network connection')
-        AbsLogger.info({ tag: 'default', message: 'attemptConnection: No network connection' })
         return
       }
 
@@ -374,6 +367,17 @@ export default {
       this.$setOrientationLock(this.$store.getters['getOrientationLockSetting'])
 
       await this.$store.dispatch('setupNetworkListener')
+
+      // First run only: no saved servers and the user has not yet connected or skipped.
+      // Later launches with saved servers, logged-out browsing and reconnects are unaffected.
+      const hasSavedServers = !!deviceData?.serverConnectionConfigs?.length
+      if (!hasSavedServers && !this.$store.state.onboardingHandled) {
+        this.$store.commit('setOnboardingHandled', true)
+        if (this.$route.path !== '/connect') {
+          const destination = this.$route.fullPath === '/' ? undefined : this.$route.fullPath
+          this.$router.replace({ path: '/connect', query: destination ? { redirect: destination } : {} })
+        }
+      }
 
       if (this.$store.state.user.serverConnectionConfig) {
         AbsLogger.info({ tag: 'default', message: `mounted: Server connected, init libraries (${this.$store.getters['user/getServerConfigName']})` })
