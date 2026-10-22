@@ -7,7 +7,6 @@ import { StatusBar, Style } from '@capacitor/status-bar'
 import { Clipboard } from '@capacitor/clipboard'
 import { Capacitor } from '@capacitor/core'
 import { formatDistance, format, addDays, isDate, setDefaultOptions } from 'date-fns'
-import * as locale from 'date-fns/locale'
 
 Vue.directive('click-outside', vClickOutside.directive)
 
@@ -40,9 +39,56 @@ Vue.prototype.$encodeUriPath = (path) => {
   return path.replace(/\\/g, '/').replace(/%/g, '%25').replace(/#/g, '%23')
 }
 
-Vue.prototype.$setDateFnsLocale = (localeString) => {
-  if (!locale[localeString]) return 0
-  return setDefaultOptions({ locale: locale[localeString] })
+// Keys match the dateFnsLocale values in plugins/i18n.js. Norwegian uses the nb locale, date-fns has no "no" folder.
+const dateFnsLocaleLoaders = {
+  ar: () => import('date-fns/locale/ar/index.js'),
+  be: () => import('date-fns/locale/be/index.js'),
+  bg: () => import('date-fns/locale/bg/index.js'),
+  bn: () => import('date-fns/locale/bn/index.js'),
+  ca: () => import('date-fns/locale/ca/index.js'),
+  cs: () => import('date-fns/locale/cs/index.js'),
+  da: () => import('date-fns/locale/da/index.js'),
+  de: () => import('date-fns/locale/de/index.js'),
+  enUS: () => import('date-fns/locale/en-US/index.js'),
+  es: () => import('date-fns/locale/es/index.js'),
+  fi: () => import('date-fns/locale/fi/index.js'),
+  fr: () => import('date-fns/locale/fr/index.js'),
+  he: () => import('date-fns/locale/he/index.js'),
+  hr: () => import('date-fns/locale/hr/index.js'),
+  hu: () => import('date-fns/locale/hu/index.js'),
+  it: () => import('date-fns/locale/it/index.js'),
+  ko: () => import('date-fns/locale/ko/index.js'),
+  lt: () => import('date-fns/locale/lt/index.js'),
+  nl: () => import('date-fns/locale/nl/index.js'),
+  no: () => import('date-fns/locale/nb/index.js'),
+  pl: () => import('date-fns/locale/pl/index.js'),
+  ptBR: () => import('date-fns/locale/pt-BR/index.js'),
+  ru: () => import('date-fns/locale/ru/index.js'),
+  sk: () => import('date-fns/locale/sk/index.js'),
+  sl: () => import('date-fns/locale/sl/index.js'),
+  sv: () => import('date-fns/locale/sv/index.js'),
+  tr: () => import('date-fns/locale/tr/index.js'),
+  uk: () => import('date-fns/locale/uk/index.js'),
+  vi: () => import('date-fns/locale/vi/index.js'),
+  zhCN: () => import('date-fns/locale/zh-CN/index.js')
+}
+
+let requestedDateFnsLocale = null
+Vue.prototype.$setDateFnsLocale = async (localeString) => {
+  const loader = dateFnsLocaleLoaders[localeString]
+  if (!loader) return 0
+
+  requestedDateFnsLocale = localeString
+  try {
+    const loaded = await loader()
+    // A newer language change started while this one loaded
+    if (requestedDateFnsLocale !== localeString) return 0
+    setDefaultOptions({ locale: loaded.default || loaded })
+    return 1
+  } catch (error) {
+    console.error('Failed to load date-fns locale', localeString, error)
+    return 0
+  }
 }
 Vue.prototype.$dateDistanceFromNow = (unixms) => {
   if (!unixms) return ''

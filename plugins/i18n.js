@@ -131,7 +131,8 @@ async function loadi18n(code) {
     Vue.prototype.$strings[key] = strings[key] || translations[defaultCode][key]
   }
 
-  Vue.prototype.$setDateFnsLocale(languageCodeMap[code].dateFnsLocale)
+  // Await so views rendered on change-lang already use the new date locale
+  await Vue.prototype.$setDateFnsLocale(languageCodeMap[code].dateFnsLocale)
   syncDownloadNotificationStrings()
 
   this.$eventBus.$emit('change-lang', code)
