@@ -33,6 +33,10 @@ export const getters = {
   }
 }
 
+// Only the newest library fetch may commit, so a slow response cannot overwrite a later selection
+let latestFetchToken = 0
+const pendingFetches = new Map()
+
 export const actions = {
   fetch({ state, commit, dispatch, rootState }, libraryId) {
     if (!rootState.user || !rootState.user.user) {
@@ -40,9 +44,25 @@ export const actions = {
       return false
     }
 
-    return this.$nativeHttp
+    // Reuse an in-flight request only while it is still the newest one
+    const pending = pendingFetches.get(libraryId)
+    if (pending && pending.token === latestFetchToken) return pending.promise
+
+    const token = ++latestFetchToken
+    const userId = rootState.user.user.id
+    const serverConfigId = rootState.user.serverConnectionConfig?.id
+    const isCurrent = () => token === latestFetchToken && rootState.user.user?.id === userId && rootState.user.serverConnectionConfig?.id === serverConfigId
+
+    if (libraryId !== state.currentLibraryId) {
+      // Drop the previous library's filters and counts so they cannot show under the new selection
+      commit('clearLibraryScope')
+    }
+
+    const promise = this.$nativeHttp
       .get(`/api/libraries/${libraryId}?include=filterdata`)
       .then((data) => {
+        if (!isCurrent()) return false
+
         const library = data.library
         const filterData = data.filterdata
         const issues = data.issues || 0
@@ -61,6 +81,12 @@ export const actions = {
         console.error('Failed', error)
         return false
       })
+
+    pendingFetches.set(libraryId, { token, promise })
+    promise.then(() => {
+      if (pendingFetches.get(libraryId)?.token === token) pendingFetches.delete(libraryId)
+    })
+    return promise
   },
   // Return true if calling load
   load({ state, commit, rootState }) {
@@ -137,6 +163,11 @@ export const mutations = {
   },
   setLibraryFilterData(state, filterData) {
     state.filterData = filterData
+  },
+  clearLibraryScope(state) {
+    state.filterData = null
+    state.issues = 0
+    state.numUserPlaylists = 0
   },
   updateFilterDataWithAudiobook(state, audiobook) {
     if (!audiobook || !audiobook.book || !state.filterData) return
