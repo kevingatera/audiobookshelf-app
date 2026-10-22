@@ -1,6 +1,6 @@
 <template>
   <div>
-    <button type="button" role="switch" :aria-checked="toggleValue ? 'true' : 'false'" :disabled="disabled" class="flex items-center justify-start min-w-[44px] min-h-[44px]" :class="disabled ? 'cursor-not-allowed' : 'cursor-pointer'" @click.stop="clickToggle">
+    <button type="button" role="switch" :aria-checked="toggleValue ? 'true' : 'false'" :disabled="disabled" :aria-label="label" class="flex items-center justify-start min-w-[44px] min-h-[44px]" :class="disabled ? 'cursor-not-allowed' : 'cursor-pointer'" @click.stop="clickToggle">
       <span class="border rounded-full border-gray-400 flex items-center w-10 justify-start" :class="className">
         <span class="rounded-full border w-5 h-5 border-gray-100 shadow transform transition-transform duration-100" :class="switchClassName"></span>
       </span>
@@ -12,6 +12,7 @@
 export default {
   props: {
     value: Boolean,
+    label: String,
     onColor: {
       type: String,
       default: 'success'

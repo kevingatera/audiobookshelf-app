@@ -4,14 +4,14 @@
     <p class="uppercase text-xs font-semibold text-fg-muted mb-2">{{ $strings.HeaderUserInterfaceSettings }}</p>
     <div class="flex items-center py-3">
       <div class="w-10 flex justify-center" @click="toggleEnableAltView">
-        <ui-toggle-switch v-model="enableBookshelfView" @input="saveSettings" />
+        <ui-toggle-switch v-model="enableBookshelfView" :label="$strings.LabelUseBookshelfView" @input="saveSettings" />
       </div>
       <p class="pl-4">{{ $strings.LabelUseBookshelfView }}</p>
     </div>
     <!-- screen.orientation.lock not supported on iOS webview -->
     <div v-if="!isiOS" class="flex items-center py-3">
       <div class="w-10 flex justify-center" @click.stop="toggleLockOrientation">
-        <ui-toggle-switch v-model="lockCurrentOrientation" class="pointer-events-none" />
+        <ui-toggle-switch v-model="lockCurrentOrientation" :label="$strings.LabelLockOrientation" class="pointer-events-none" />
       </div>
       <p class="pl-4">{{ $strings.LabelLockOrientation }}</p>
     </div>
@@ -50,20 +50,20 @@
     </div>
     <div class="flex items-center py-3">
       <div class="w-10 flex justify-center" @click="toggleDisableAutoRewind">
-        <ui-toggle-switch v-model="settings.disableAutoRewind" @input="saveSettings" />
+        <ui-toggle-switch v-model="settings.disableAutoRewind" :label="$strings.LabelDisableAutoRewind" @input="saveSettings" />
       </div>
       <p class="pl-4">{{ $strings.LabelDisableAutoRewind }}</p>
     </div>
     <div v-if="!isiOS" class="flex items-center py-3">
       <div class="w-10 flex justify-center" @click="toggleEnableMp3IndexSeeking">
-        <ui-toggle-switch v-model="settings.enableMp3IndexSeeking" @input="saveSettings" />
+        <ui-toggle-switch v-model="settings.enableMp3IndexSeeking" :label="$strings.LabelEnableMp3IndexSeeking" @input="saveSettings" />
       </div>
       <p class="pl-4">{{ $strings.LabelEnableMp3IndexSeeking }}</p>
       <span class="material-symbols text-xl ml-2" @click.stop="showConfirmMp3IndexSeeking">info</span>
     </div>
     <div class="flex items-center py-3">
       <div class="w-10 flex justify-center" @click="toggleAllowSeekingOnMediaControls">
-        <ui-toggle-switch v-model="settings.allowSeekingOnMediaControls" @input="saveSettings" />
+        <ui-toggle-switch v-model="settings.allowSeekingOnMediaControls" :label="$strings.LabelAllowSeekingOnMediaControls" @input="saveSettings" />
       </div>
       <p class="pl-4">{{ $strings.LabelAllowSeekingOnMediaControls }}</p>
     </div>
@@ -73,7 +73,7 @@
       <p class="uppercase text-xs font-semibold text-fg-muted mb-2 mt-10">{{ $strings.HeaderSleepTimerSettings }}</p>
       <div class="flex items-center py-3">
         <div class="w-10 flex justify-center" @click="toggleDisableShakeToResetSleepTimer">
-          <ui-toggle-switch v-model="settings.disableShakeToResetSleepTimer" @input="saveSettings" />
+          <ui-toggle-switch v-model="settings.disableShakeToResetSleepTimer" :label="$strings.LabelDisableShakeToReset" @input="saveSettings" />
         </div>
         <p class="pl-4">{{ $strings.LabelDisableShakeToReset }}</p>
         <span class="material-symbols text-xl ml-2" @click.stop="showInfo('disableShakeToResetSleepTimer')">info</span>
@@ -87,7 +87,7 @@
     </template>
     <div class="flex items-center py-3">
       <div class="w-10 flex justify-center" @click="toggleDisableSleepTimerFadeOut">
-        <ui-toggle-switch v-model="settings.disableSleepTimerFadeOut" @input="saveSettings" />
+        <ui-toggle-switch v-model="settings.disableSleepTimerFadeOut" :label="$strings.LabelDisableAudioFadeOut" @input="saveSettings" />
       </div>
       <p class="pl-4">{{ $strings.LabelDisableAudioFadeOut }}</p>
       <span class="material-symbols text-xl ml-2" @click.stop="showInfo('disableSleepTimerFadeOut')">info</span>
@@ -95,21 +95,21 @@
     <template v-if="!isiOS">
       <div class="flex items-center py-3">
         <div class="w-10 flex justify-center" @click="toggleDisableSleepTimerResetFeedback">
-          <ui-toggle-switch v-model="settings.disableSleepTimerResetFeedback" @input="saveSettings" />
+          <ui-toggle-switch v-model="settings.disableSleepTimerResetFeedback" :label="$strings.LabelDisableVibrateOnReset" @input="saveSettings" />
         </div>
         <p class="pl-4">{{ $strings.LabelDisableVibrateOnReset }}</p>
         <span class="material-symbols text-xl ml-2" @click.stop="showInfo('disableSleepTimerResetFeedback')">info</span>
       </div>
       <div class="flex items-center py-3">
         <div class="w-10 flex justify-center" @click="toggleSleepTimerAlmostDoneChime">
-          <ui-toggle-switch v-model="settings.enableSleepTimerAlmostDoneChime" @input="saveSettings" />
+          <ui-toggle-switch v-model="settings.enableSleepTimerAlmostDoneChime" :label="$strings.LabelSleepTimerAlmostDoneChime" @input="saveSettings" />
         </div>
         <p class="pl-4">{{ $strings.LabelSleepTimerAlmostDoneChime }}</p>
         <span class="material-symbols text-xl ml-2" @click.stop="showInfo('enableSleepTimerAlmostDoneChime')">info</span>
       </div>
       <div class="flex items-center py-3">
         <div class="w-10 flex justify-center" @click="toggleAutoSleepTimer">
-          <ui-toggle-switch v-model="settings.autoSleepTimer" @input="saveSettings" />
+          <ui-toggle-switch v-model="settings.autoSleepTimer" :label="$strings.LabelAutoSleepTimer" @input="saveSettings" />
         </div>
         <p class="pl-4">{{ $strings.LabelAutoSleepTimer }}</p>
         <span class="material-symbols text-xl ml-2" @click.stop="showInfo('autoSleepTimer')">info</span>
@@ -132,7 +132,7 @@
     </div>
     <div v-if="settings.autoSleepTimer" class="flex items-center py-3">
       <div class="w-10 flex justify-center" @click="toggleAutoSleepTimerAutoRewind">
-        <ui-toggle-switch v-model="settings.autoSleepTimerAutoRewind" @input="saveSettings" />
+        <ui-toggle-switch v-model="settings.autoSleepTimerAutoRewind" :label="$strings.LabelAutoSleepTimerAutoRewind" @input="saveSettings" />
       </div>
       <p class="pl-4">{{ $strings.LabelAutoSleepTimerAutoRewind }}</p>
       <span class="material-symbols text-xl ml-2" @click.stop="showInfo('autoSleepTimerAutoRewind')">info</span>
