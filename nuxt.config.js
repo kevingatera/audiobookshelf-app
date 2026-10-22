@@ -7,7 +7,8 @@ export default {
   env: {
     PROD: '1',
     ANDROID_APP_URL: 'https://play.google.com/store/apps/details?id=com.audiobookshelf.app',
-    IOS_APP_URL: ''
+    IOS_APP_URL: '',
+    ABS_OAUTH_SCHEME: process.env.ABS_OAUTH_SCHEME || 'audiobookshelf'
   },
 
   publicRuntimeConfig: {
