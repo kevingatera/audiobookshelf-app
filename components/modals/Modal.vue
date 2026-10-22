@@ -1,12 +1,14 @@
 <template>
-  <div ref="wrapper" class="modal modal-bg w-full h-full max-h-screen fixed top-0 left-0 bg-primary bg-opacity-75 flex items-center justify-center z-50 opacity-0">
-    <div class="absolute top-0 left-0 w-full h-40 bg-gradient-to-b from-black to-transparent opacity-90 pointer-events-none" />
+  <div ref="wrapper" class="modal modal-bg w-full h-full max-h-screen fixed top-0 left-0 bg-primary bg-opacity-75 flex justify-center z-50 opacity-0" :class="sheet ? 'items-end' : 'items-center'">
+    <template v-if="!sheet">
+      <div class="absolute top-0 left-0 w-full h-40 bg-gradient-to-b from-black to-transparent opacity-90 pointer-events-none" />
 
-    <div class="absolute z-40 top-11 right-4 h-10 w-10 flex items-center justify-center cursor-pointer text-white hover:text-gray-300" @click="show = false">
-      <span class="material-symbols text-4xl">close</span>
-    </div>
+      <div class="absolute z-40 top-11 right-4 h-10 w-10 flex items-center justify-center cursor-pointer text-white hover:text-gray-300" @click="show = false">
+        <span class="material-symbols text-4xl">close</span>
+      </div>
+    </template>
     <slot name="outer" />
-    <div ref="content" style="min-height: 200px" class="relative text-fg max-h-screen" :style="{ height: modalHeight, width: modalWidth, maxWidth: maxWidth }" v-click-outside="clickBg">
+    <div ref="content" class="relative text-fg max-h-screen" :class="sheet ? 'w-full' : ''" :style="contentStyle" v-click-outside="clickBg">
       <slot />
     </div>
   </div>
@@ -32,12 +34,15 @@ export default {
     maxWidth: {
       type: String,
       default: '90%'
-    }
+    },
+    // Bottom-anchored, slides up. Used by modals/BottomSheet.vue.
+    sheet: Boolean
   },
   data() {
     return {
       el: null,
-      content: null
+      content: null,
+      removeTimer: null
     }
   },
   watch: {
@@ -67,6 +72,14 @@ export default {
     },
     modalWidth() {
       return typeof this.width === 'string' ? this.width : this.width + 'px'
+    },
+    contentStyle() {
+      return {
+        minHeight: this.sheet ? '0' : '200px',
+        height: this.modalHeight,
+        width: this.modalWidth,
+        maxWidth: this.maxWidth
+      }
     }
   },
   methods: {
@@ -79,17 +92,23 @@ export default {
     setShow() {
       this.$store.commit('globals/setIsModalOpen', true)
 
+      clearTimeout(this.removeTimer)
       document.body.appendChild(this.el)
       setTimeout(() => {
-        this.content.style.transform = 'scale(1)'
+        this.content.style.transform = this.sheet ? 'translateY(0)' : 'scale(1)'
       }, 10)
       document.documentElement.classList.add('modal-open')
     },
     setHide() {
       this.$store.commit('globals/setIsModalOpen', false)
 
-      this.content.style.transform = 'scale(0)'
-      this.el.remove()
+      this.content.style.transform = this.sheet ? 'translateY(100%)' : 'scale(0)'
+      if (this.sheet) {
+        // Keep the wrapper mounted until the slide-out transition finishes.
+        this.removeTimer = setTimeout(() => this.el.remove(), 200)
+      } else {
+        this.el.remove()
+      }
       document.documentElement.classList.remove('modal-open')
     },
     closeModalEvt() {
@@ -101,13 +120,14 @@ export default {
     this.$eventBus.$on('close-modal', this.closeModalEvt)
     this.el = this.$refs.wrapper
     this.content = this.$refs.content
-    this.content.style.transform = 'scale(0)'
-    this.content.style.transition = 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+    this.content.style.transform = this.sheet ? 'translateY(100%)' : 'scale(0)'
+    this.content.style.transition = `transform ${this.sheet ? '0.2s' : '0.25s'} cubic-bezier(0.16, 1, 0.3, 1)`
     this.el.style.opacity = 1
     this.el.remove()
   },
   beforeDestroy() {
     this.$eventBus.$off('close-modal', this.closeModalEvt)
+    clearTimeout(this.removeTimer)
   }
 }
 </script>
