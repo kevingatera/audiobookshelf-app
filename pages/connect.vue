@@ -13,6 +13,10 @@
       <connection-server-connect-form v-if="deviceData" />
     </div>
 
+    <div v-if="deviceData && !deviceData.serverConnectionConfigs.length" class="absolute bottom-16 left-0 right-0 flex justify-center">
+      <button type="button" class="text-sm underline text-fg-muted" @click="skipForNow">{{ $strings.ButtonSkipForNow }}</button>
+    </div>
+
     <div class="flex items-center justify-center pt-4 fixed bottom-4 left-0 right-0">
       <a href="https://github.com/advplyr/audiobookshelf-app" target="_blank" class="text-sm pr-2">{{ $strings.MessageFollowTheProjectOnGithub }}</a>
       <a href="https://github.com/advplyr/audiobookshelf-app" target="_blank"
@@ -36,6 +40,10 @@ export default {
   },
   computed: {},
   methods: {
+    skipForNow() {
+      this.$store.commit('setOnboardingHandled', true)
+      this.$router.replace('/bookshelf')
+    },
     async init() {
       await this.$store.dispatch('setupNetworkListener')
       this.deviceData = await this.$db.getDeviceData()
