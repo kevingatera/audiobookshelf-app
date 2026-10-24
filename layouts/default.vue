@@ -1,10 +1,11 @@
 <template>
-  <div class="w-full layout-wrapper bg-bg">
+  <div class="w-full layout-wrapper bg-bg" :class="{ hasBottomNav: showBottomNav }">
     <app-appbar />
     <div id="content" class="overflow-hidden relative" :class="isPlayerOpen ? 'playerOpen' : ''">
       <Nuxt :key="currentLang" />
     </div>
     <app-audio-player-container ref="streamContainer" />
+    <app-bottom-nav :show="showBottomNav" />
     <modals-libraries-modal />
     <modals-playlists-add-create-modal />
     <modals-select-local-folder-modal />
@@ -83,6 +84,9 @@ export default {
   computed: {
     isPlayerOpen() {
       return this.$store.getters['getIsPlayerOpen']
+    },
+    showBottomNav() {
+      return !this.$store.state.playerIsFullscreen && !this.$store.state.showReader && this.$route.path !== '/connect'
     },
     routeName() {
       return this.$route.name

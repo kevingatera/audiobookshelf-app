@@ -18,6 +18,7 @@ textarea {
 }
 
 .layout-wrapper {
+  --bottom-nav-height: calc(56px + env(safe-area-inset-bottom));
   height: calc(100vh - env(safe-area-inset-top));
   min-height: calc(100vh - env(safe-area-inset-top));
   max-height: calc(100vh - env(safe-area-inset-top));
@@ -34,6 +35,22 @@ textarea {
   height: calc(100% - 184px);
   min-height: calc(100% - 184px);
   max-height: calc(100% - 184px);
+}
+
+.hasBottomNav {
+  --collapsed-player-offset: var(--bottom-nav-height);
+}
+
+.hasBottomNav #content {
+  height: calc(100% - 64px - var(--bottom-nav-height));
+  min-height: calc(100% - 64px - var(--bottom-nav-height));
+  max-height: calc(100% - 64px - var(--bottom-nav-height));
+}
+
+.hasBottomNav #content.playerOpen {
+  height: calc(100% - 184px - var(--bottom-nav-height));
+  min-height: calc(100% - 184px - var(--bottom-nav-height));
+  max-height: calc(100% - 184px - var(--bottom-nav-height));
 }
 
 #bookshelf {

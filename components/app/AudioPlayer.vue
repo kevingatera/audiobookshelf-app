@@ -61,7 +61,7 @@
       <p class="author-text text-fg text-opacity-75 truncate">{{ authorName }}</p>
     </div>
 
-    <div id="playerContent" class="playerContainer w-full z-20 absolute bottom-0 left-0 right-0 p-2 pointer-events-auto transition-all" :style="{ backgroundColor: showFullscreen ? '' : coverRgb }" @click="clickContainer">
+    <div ref="playerContent" id="playerContent" class="playerContainer w-full z-20 absolute bottom-0 left-0 right-0 p-2 pointer-events-auto transition-all" :style="{ backgroundColor: showFullscreen ? '' : coverRgb }" @click="clickContainer">
       <!-- Top controls bar - fullscreen only: bookmarks, speed, sleep timer, chapters -->
       <div v-if="showFullscreen" class="absolute bottom-4 left-0 right-0 w-full pb-4 pt-2 mx-auto px-6" style="max-width: 414px">
         <div class="flex items-center justify-between pointer-events-auto">
@@ -169,6 +169,7 @@ export default {
       seekLoading: false,
       touchStartY: 0,
       touchStartTime: 0,
+      touchStartId: null,
       playerSettings: {
         useChapterTrack: false,
         useTotalTrack: true,
@@ -700,7 +701,10 @@ export default {
       if (!e.changedTouches || this.$store.state.globals.isModalOpen) return
       const touchPosY = e.changedTouches[0].pageY
       // when minimized only listen to touchstart on the player
-      if (!this.showFullscreen && touchPosY < window.innerHeight - 120) return
+      if (!this.showFullscreen) {
+        const playerTop = this.$refs.playerContent ? this.$refs.playerContent.getBoundingClientRect().top : window.innerHeight - 120
+        if (e.changedTouches[0].clientY < playerTop) return
+      }
 
       // for ios
       if (!this.showFullscreen && e.pageX < 20) {
@@ -710,16 +714,20 @@ export default {
 
       this.touchStartY = touchPosY
       this.touchStartTime = Date.now()
+      this.touchStartId = e.changedTouches[0].identifier
+    },
+    resetTouchStart() {
+      this.touchStartTime = 0
+      this.touchStartY = 0
+      this.touchStartId = null
     },
     touchend(e) {
       if (!e.changedTouches) return
+      const endTouch = this.touchStartId === null ? null : Array.from(e.changedTouches).find((t) => t.identifier === this.touchStartId)
       const touchDuration = Date.now() - this.touchStartTime
-      const touchEndY = e.changedTouches[0].pageY
-      const touchDistanceY = touchEndY - this.touchStartY
+      const touchDistanceY = endTouch ? endTouch.pageY - this.touchStartY : 0
 
-      // reset touch start data
-      this.touchStartTime = 0
-      this.touchStartY = 0
+      this.resetTouchStart()
 
       if (this.isDraggingCursor) {
         if (this.draggingCurrentTime !== this.currentTime) {
@@ -727,8 +735,8 @@ export default {
         }
         this.isDraggingCursor = false
       } else {
-        if (touchDuration > 1200) {
-          // console.log('touch too long', touchDuration)
+        // Nav and other touches that started outside the player have no matching start
+        if (!endTouch || touchDuration > 1200) {
           return
         }
         if (this.showFullscreen) {
@@ -1002,6 +1010,7 @@ export default {
     this.$eventBus.$on('minimize-player', this.minimizePlayerEvt)
     document.body.addEventListener('touchstart', this.touchstart, { passive: false })
     document.body.addEventListener('touchend', this.touchend)
+    document.body.addEventListener('touchcancel', this.resetTouchStart)
     document.body.addEventListener('touchmove', this.touchmove)
     this.$nextTick(this.init)
   },
@@ -1023,6 +1032,7 @@ export default {
     this.$eventBus.$off('minimize-player', this.minimizePlayerEvt)
     document.body.removeEventListener('touchstart', this.touchstart)
     document.body.removeEventListener('touchend', this.touchend)
+    document.body.removeEventListener('touchcancel', this.resetTouchStart)
     document.body.removeEventListener('touchmove', this.touchmove)
 
     if (AbsAudioPlayer.removeAllListeners) {
@@ -1041,6 +1051,7 @@ export default {
   --cover-image-height-collapsed: 46px;
   --title-author-left-offset-collapsed: 80px;
   --title-author-width-collapsed: 40%;
+  --collapsed-player-offset: 0px;
 }
 
 .playerContainer {
@@ -1057,6 +1068,7 @@ export default {
 }
 #playerContent {
   box-shadow: 0px -8px 8px #11111155;
+  bottom: var(--collapsed-player-offset);
 }
 .fullscreen #playerContent {
   box-shadow: none;
@@ -1073,7 +1085,7 @@ export default {
 }
 
 .cover-wrapper {
-  bottom: 68px;
+  bottom: calc(var(--collapsed-player-offset) + 68px);
   left: 24px;
   height: var(--cover-image-height-collapsed);
   width: var(--cover-image-width-collapsed);
@@ -1128,7 +1140,7 @@ export default {
   transform-origin: left bottom;
 
   width: var(--title-author-width-collapsed);
-  bottom: 76px;
+  bottom: calc(var(--collapsed-player-offset) + 76px);
   left: var(--title-author-left-offset-collapsed);
   text-align: left;
 }
