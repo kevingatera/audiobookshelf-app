@@ -4,7 +4,12 @@
 
 <script>
 export default {
-  asyncData({ redirect }) {
+  async asyncData({ app, store, redirect }) {
+    if (!store.state.onboardingHandled) {
+      store.commit('setOnboardingHandled', true)
+      const deviceData = await app.$db.getDeviceData()
+      if (!deviceData?.serverConnectionConfigs?.length) return redirect('/connect')
+    }
     return redirect('/bookshelf')
   },
   data() {

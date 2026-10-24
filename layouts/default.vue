@@ -368,17 +368,6 @@ export default {
 
       await this.$store.dispatch('setupNetworkListener')
 
-      // First run only: no saved servers and the user has not yet connected or skipped.
-      // Later launches with saved servers, logged-out browsing and reconnects are unaffected.
-      const hasSavedServers = !!deviceData?.serverConnectionConfigs?.length
-      if (!hasSavedServers && !this.$store.state.onboardingHandled) {
-        this.$store.commit('setOnboardingHandled', true)
-        if (this.$route.path !== '/connect') {
-          const destination = this.$route.fullPath === '/' ? undefined : this.$route.fullPath
-          this.$router.replace({ path: '/connect', query: destination ? { redirect: destination } : {} })
-        }
-      }
-
       if (this.$store.state.user.serverConnectionConfig) {
         AbsLogger.info({ tag: 'default', message: `mounted: Server connected, init libraries (${this.$store.getters['user/getServerConfigName']})` })
         await this.initLibraries()
