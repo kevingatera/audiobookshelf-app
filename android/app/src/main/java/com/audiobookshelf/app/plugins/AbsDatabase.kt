@@ -736,7 +736,8 @@ class AbsDatabase : Plugin() {
     require(settingsBackupTime.matches(settings.autoSleepTimerStartTime)) { "Invalid sleep timer start time" }
     require(settingsBackupTime.matches(settings.autoSleepTimerEndTime)) { "Invalid sleep timer end time" }
     require(settings.languageCode in settingsBackupLanguages) { "Unsupported language" }
-    require(settings.sleepTimerLength in 1L..86_400_000L) { "Invalid sleep timer length" }
+    // 0 means End of chapter, which the app saves, so it must stay importable
+    require(settings.sleepTimerLength in 0L..86_400_000L) { "Invalid sleep timer length" }
     require(settings.autoSleepTimerAutoRewindTime in 0L..3_600_000L) { "Invalid auto rewind time" }
     require(settings.jumpBackwardsTime in 1..3600 && settings.jumpForwardTime in 1..3600) { "Invalid jump time" }
     require(settings.androidAutoBrowseLimitForGrouping in 1..10_000) { "Invalid browse limit" }
