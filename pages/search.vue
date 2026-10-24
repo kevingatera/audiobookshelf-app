@@ -78,7 +78,7 @@
         <p v-if="requestLoading" class="text-sm text-fg-muted mb-1">{{ $strings.MessageFetching }}</p>
         <p v-else-if="requestError" class="text-sm text-fg-muted mb-1">{{ $strings.MessageBookRequestSearchFailed }}</p>
         <template v-for="result in requestResults">
-          <div :key="result.foreignBookId" class="w-full h-16 py-1">
+          <div :key="result.foreignBookId" class="w-full py-1">
             <cards-book-request-search-card :result="result" :state="requestStateFor(result)" @request="submitRequest" />
           </div>
         </template>
@@ -104,13 +104,13 @@ export default {
       authorResults: [],
       narratorResults: [],
       tagResults: [],
-      requestCapabilities: { libraryId: null, enabled: false },
+      requestCapabilities: { identity: null, enabled: false },
       capabilityToken: 0,
       requestResults: [],
       requestToken: 0,
       requestLoading: false,
       requestError: false,
-      // Keyed by "libraryId:foreignBookId" so a submit result can't land on another library's row.
+      // Keyed by "identity:foreignBookId" so a submit result can't land on another server, user or library's row.
       requestState: {}
     }
   },
@@ -127,12 +127,16 @@ export default {
     isBookLibrary() {
       return this.$store.getters['libraries/getCurrentLibraryMediaType'] === 'book'
     },
+    // Changes with the server, user or library, so stale responses can be detected
+    requestIdentity() {
+      return [this.$store.state.user.serverConnectionConfig?.id, this.$store.state.user.user?.id, this.currentLibraryId].join('|')
+    },
     requestsEnabled() {
-      return this.isBookLibrary && this.requestCapabilities.libraryId === this.currentLibraryId && !!this.requestCapabilities.enabled
+      return this.isBookLibrary && this.requestCapabilities.identity === this.requestIdentity && !!this.requestCapabilities.enabled
     }
   },
   watch: {
-    currentLibraryId() {
+    requestIdentity() {
       this.requestToken++
       this.requestResults = []
       this.requestLoading = false
@@ -143,15 +147,16 @@ export default {
   },
   methods: {
     async fetchRequestCapabilities() {
+      const identity = this.requestIdentity
       const libraryId = this.currentLibraryId
       const token = ++this.capabilityToken
       if (!this.isBookLibrary) {
-        this.requestCapabilities = { libraryId, enabled: false }
+        this.requestCapabilities = { identity, enabled: false }
         return
       }
       const response = await this.$nativeHttp.get(`/api/libraries/${libraryId}/book-requests/capabilities`).catch(() => null)
-      if (token !== this.capabilityToken || libraryId !== this.currentLibraryId) return
-      this.requestCapabilities = { libraryId, enabled: !!response?.enabled }
+      if (token !== this.capabilityToken || identity !== this.requestIdentity) return
+      this.requestCapabilities = { identity, enabled: !!response?.enabled }
       // The capability can arrive after the search finished, so the request search is re-run here.
       if (this.requestsEnabled && this.lastSearch) this.runRequestSearch(this.lastSearch)
     },
@@ -163,6 +168,7 @@ export default {
         this.requestError = false
         return
       }
+      const identity = this.requestIdentity
       const libraryId = this.currentLibraryId
       this.requestLoading = true
       this.requestError = false
@@ -170,13 +176,13 @@ export default {
         console.error('Book request search error', error)
         return null
       })
-      if (token !== this.requestToken || libraryId !== this.currentLibraryId) return
+      if (token !== this.requestToken || identity !== this.requestIdentity) return
       this.requestLoading = false
       this.requestError = !response
       this.requestResults = response?.remote || []
     },
     requestStateFor(result) {
-      const key = `${this.currentLibraryId}:${result.foreignBookId}`
+      const key = `${this.requestIdentity}:${result.foreignBookId}`
       if (this.requestState[key]) return this.requestState[key]
       return result.status === 'in_library' ? 'in_library' : null
     },
@@ -214,8 +220,9 @@ export default {
       this.tagResults = results?.tags || []
     },
     async submitRequest(result) {
+      const identity = this.requestIdentity
       const libraryId = this.currentLibraryId
-      const key = `${libraryId}:${result.foreignBookId}`
+      const key = `${identity}:${result.foreignBookId}`
       // Any state, including 'submitting', blocks a second tap.
       if (this.requestState[key]) return
       this.$set(this.requestState, key, 'submitting')
@@ -225,9 +232,12 @@ export default {
           searchForNewBook: true,
           remoteBook: result.remoteBook
         })
+        // The server, user or library changed while the request was in flight
+        if (identity !== this.requestIdentity) return
         this.$set(this.requestState, key, 'submitted')
         this.$toast.success(this.$strings.ToastBookRequestSubmitted)
       } catch (error) {
+        if (identity !== this.requestIdentity) return
         const code = error?.status === 409 ? error.data?.code : null
         if (code === 'ALREADY_IN_LIBRARY') {
           this.$set(this.requestState, key, 'in_library')

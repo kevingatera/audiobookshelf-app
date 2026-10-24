@@ -69,6 +69,7 @@ export default function ({ store, $db, $socket }, inject) {
      * @returns {Promise} - Promise that resolves with the response data
      */
     async handleTokenRefresh(method, url, data, headers, options, serverConnectionConfig) {
+      let newTokens
       try {
         console.log('[nativeHttp] Attempting to refresh token...')
 
@@ -85,7 +86,7 @@ export default function ({ store, $db, $socket }, inject) {
         }
 
         // Attempt to refresh the token
-        const newTokens = await this.refreshAccessToken(refreshToken, serverConnectionConfig.address)
+        newTokens = await this.refreshAccessToken(refreshToken, serverConnectionConfig.address)
         if (!newTokens?.accessToken) {
           console.error('[nativeHttp] Failed to refresh access token')
           throw new Error('Failed to refresh access token')
@@ -93,26 +94,6 @@ export default function ({ store, $db, $socket }, inject) {
 
         // Update the store with new tokens
         await this.updateTokens(newTokens, serverConnectionConfig)
-
-        // Retry the original request with the new token
-        console.log('[nativeHttp] Retrying original request with new token...')
-        const retryResponse = await CapacitorHttp.request({
-          method,
-          url,
-          data,
-          headers: {
-            ...headers,
-            Authorization: `Bearer ${newTokens.accessToken}`
-          },
-          ...options
-        })
-
-        if (retryResponse.status >= 400) {
-          console.error(`[nativeHttp] Retry request failed with status ${retryResponse.status}`)
-          throw httpError(retryResponse)
-        }
-
-        return retryResponse.data
       } catch (error) {
         console.error('[nativeHttp] Token refresh failed:', error)
 
@@ -120,6 +101,26 @@ export default function ({ store, $db, $socket }, inject) {
         await this.handleRefreshFailure(serverConnectionConfig?.id)
         throw error
       }
+
+      // Retry the original request with the new token. Errors here are ordinary request errors, not refresh failures.
+      console.log('[nativeHttp] Retrying original request with new token...')
+      const retryResponse = await CapacitorHttp.request({
+        method,
+        url,
+        data,
+        headers: {
+          ...headers,
+          Authorization: `Bearer ${newTokens.accessToken}`
+        },
+        ...options
+      })
+
+      if (retryResponse.status >= 400) {
+        console.error(`[nativeHttp] Retry request failed with status ${retryResponse.status}`)
+        throw httpError(retryResponse)
+      }
+
+      return retryResponse.data
     },
 
     /**
