@@ -38,25 +38,22 @@ let latestFetchToken = 0
 const pendingFetches = new Map()
 
 export const actions = {
-  fetch({ state, commit, dispatch, rootState }, libraryId) {
+  fetch({ commit, dispatch, rootState }, libraryId) {
     if (!rootState.user || !rootState.user.user) {
       console.error('libraries/fetch - User not set')
       return false
     }
 
-    // Reuse an in-flight request only while it is still the newest one
-    const pending = pendingFetches.get(libraryId)
+    const userId = rootState.user.user.id
+    const serverConfigId = rootState.user.serverConnectionConfig?.id
+    const pendingKey = `${serverConfigId}|${userId}|${libraryId}`
+
+    // Reuse an in-flight request only for the same server, user and library, and only while it is the newest one
+    const pending = pendingFetches.get(pendingKey)
     if (pending && pending.token === latestFetchToken) return pending.promise
 
     const token = ++latestFetchToken
-    const userId = rootState.user.user.id
-    const serverConfigId = rootState.user.serverConnectionConfig?.id
     const isCurrent = () => token === latestFetchToken && rootState.user.user?.id === userId && rootState.user.serverConnectionConfig?.id === serverConfigId
-
-    if (libraryId !== state.currentLibraryId) {
-      // Drop the previous library's filters and counts so they cannot show under the new selection
-      commit('clearLibraryScope')
-    }
 
     const promise = this.$nativeHttp
       .get(`/api/libraries/${libraryId}?include=filterdata`)
@@ -82,9 +79,9 @@ export const actions = {
         return false
       })
 
-    pendingFetches.set(libraryId, { token, promise })
+    pendingFetches.set(pendingKey, { token, promise })
     promise.then(() => {
-      if (pendingFetches.get(libraryId)?.token === token) pendingFetches.delete(libraryId)
+      if (pendingFetches.get(pendingKey)?.token === token) pendingFetches.delete(pendingKey)
     })
     return promise
   },
@@ -163,11 +160,6 @@ export const mutations = {
   },
   setLibraryFilterData(state, filterData) {
     state.filterData = filterData
-  },
-  clearLibraryScope(state) {
-    state.filterData = null
-    state.issues = 0
-    state.numUserPlaylists = 0
   },
   updateFilterDataWithAudiobook(state, audiobook) {
     if (!audiobook || !audiobook.book || !state.filterData) return

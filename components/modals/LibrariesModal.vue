@@ -52,7 +52,9 @@ export default {
       await this.$hapticsImpact()
       this.show = false
       if (lib.id === this.currentLibraryId) return
-      await this.$store.dispatch('libraries/fetch', lib.id)
+      const result = await this.$store.dispatch('libraries/fetch', lib.id)
+      // Failed or superseded fetches leave the selection alone
+      if (!result || this.$store.state.libraries.currentLibraryId !== lib.id) return
       this.$eventBus.$emit('library-changed', lib.id)
       this.$localStore.setLastLibraryId(lib.id)
     }
