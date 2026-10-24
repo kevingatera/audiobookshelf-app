@@ -110,6 +110,8 @@ function loadTranslationStrings(code) {
   })
 }
 
+let languageRequestId = 0
+
 async function loadi18n(code) {
   if (!code) return false
   if (Vue.prototype.$languageCodes.current == code) {
@@ -117,7 +119,10 @@ async function loadi18n(code) {
     return false
   }
 
+  const requestId = ++languageRequestId
   const strings = translations[code] || (await loadTranslationStrings(code))
+  // A newer language change started while this one loaded
+  if (requestId !== languageRequestId) return false
   if (!strings) {
     console.warn(`Invalid lang code ${code}`)
     return false
@@ -133,6 +138,7 @@ async function loadi18n(code) {
 
   // Await so views rendered on change-lang already use the new date locale
   await Vue.prototype.$setDateFnsLocale(languageCodeMap[code].dateFnsLocale)
+  if (requestId !== languageRequestId) return false
   syncDownloadNotificationStrings()
 
   this.$eventBus.$emit('change-lang', code)
