@@ -74,7 +74,7 @@ const dateFnsLocaleLoaders = {
 }
 
 let requestedDateFnsLocale = null
-Vue.prototype.$setDateFnsLocale = async (localeString) => {
+Vue.prototype.$setDateFnsLocale = async (localeString, isStillCurrent) => {
   const loader = dateFnsLocaleLoaders[localeString]
   if (!loader) return 0
 
@@ -83,6 +83,8 @@ Vue.prototype.$setDateFnsLocale = async (localeString) => {
     const loaded = await loader()
     // A newer language change started while this one loaded
     if (requestedDateFnsLocale !== localeString) return 0
+    // The language change that requested this locale was superseded
+    if (isStillCurrent && !isStillCurrent()) return 0
     setDefaultOptions({ locale: loaded.default || loaded })
     return 1
   } catch (error) {

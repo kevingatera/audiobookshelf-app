@@ -129,8 +129,9 @@ async function loadi18n(code) {
     return false
   }
 
-  // Resolve the date locale before committing either, so strings and dates always change together
-  await Vue.prototype.$setDateFnsLocale(languageCodeMap[code].dateFnsLocale)
+  // Resolve the date locale before committing either, so strings and dates always change together.
+  // Hand over the request id so a locale superseded during its import never commits.
+  await Vue.prototype.$setDateFnsLocale(languageCodeMap[code].dateFnsLocale, () => requestId === languageRequestId)
   if (requestId !== languageRequestId) return false
 
   translations[code] = strings
