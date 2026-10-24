@@ -10,8 +10,8 @@
     </div>
     <!-- screen.orientation.lock not supported on iOS webview -->
     <div v-if="!isiOS" class="flex items-center py-3">
-      <div class="w-10 flex justify-center" @click.stop="toggleLockOrientation">
-        <ui-toggle-switch v-model="lockCurrentOrientation" :label="$strings.LabelLockOrientation" class="pointer-events-none" />
+      <div class="w-10 flex justify-center">
+        <ui-toggle-switch :value="lockCurrentOrientation" :label="$strings.LabelLockOrientation" @input="toggleLockOrientation" />
       </div>
       <p class="pl-4">{{ $strings.LabelLockOrientation }}</p>
     </div>
