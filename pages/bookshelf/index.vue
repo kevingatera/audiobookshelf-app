@@ -245,7 +245,7 @@ export default {
       const serverRequest = isConnectedToServerWithInternet
         ? this.$nativeHttp.get(`/api/libraries/${this.currentLibraryId}/personalized?minified=1&include=rssfeed,numEpisodesIncomplete`, { connectTimeout: 10000 }).catch((error) => {
             console.error('[categories] Failed to fetch categories', error)
-            return []
+            return null
           })
         : null
       const cacheKey = this.getShelvesCacheKey()
@@ -262,10 +262,10 @@ export default {
       if (serverRequest) {
         const categories = await serverRequest
         if (fetchToken !== this.categoriesFetchToken) return
-        if (!categories.length) {
-          // Failed to load categories so use local shelves, and keep the cache for the next start
-          console.warn(`[categories] Failed to get server categories so using local categories`)
-          this.shelves = localCategories
+        if (!Array.isArray(categories)) {
+          // Failed to load categories so show cached server shelves with local ones, and keep the cache for the next start
+          console.warn(`[categories] Failed to get server categories so using cached or local categories`)
+          this.shelves = cachedServerShelves ? this.buildServerShelves(cachedServerShelves, localCategories) : localCategories
           this.lastServerFetch = 0
           this.lastLocalFetch = Date.now()
           this.isLoading = false
@@ -273,7 +273,7 @@ export default {
           return
         }
 
-        // Serialize before enrichment so the cache holds only server data
+        // Serialize before enrichment so the cache holds only server data; an empty list replaces older cached shelves
         this.writeShelvesCache(cacheKey, JSON.stringify({ savedAt: Date.now(), shelves: categories }))
         this.shelves = this.buildServerShelves(categories, localCategories)
         console.log('[categories] Server shelves set', this.shelves.length, this.lastServerFetch)
