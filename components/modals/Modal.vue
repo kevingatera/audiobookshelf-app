@@ -92,7 +92,10 @@ export default {
     setShow() {
       this.$store.commit('globals/setIsModalOpen', true)
 
-      clearTimeout(this.removeTimer)
+      if (this.removeTimer) {
+        clearTimeout(this.removeTimer)
+        this.removeTimer = null
+      }
       document.body.appendChild(this.el)
       setTimeout(() => {
         this.content.style.transform = this.sheet ? 'translateY(0)' : 'scale(1)'
@@ -105,7 +108,10 @@ export default {
       this.content.style.transform = this.sheet ? 'translateY(100%)' : 'scale(0)'
       if (this.sheet) {
         // Keep the wrapper mounted until the slide-out transition finishes.
-        this.removeTimer = setTimeout(() => this.el.remove(), 200)
+        this.removeTimer = setTimeout(() => {
+          this.removeTimer = null
+          this.el.remove()
+        }, 200)
       } else {
         this.el.remove()
       }
@@ -127,7 +133,11 @@ export default {
   },
   beforeDestroy() {
     this.$eventBus.$off('close-modal', this.closeModalEvt)
-    clearTimeout(this.removeTimer)
+    if (this.removeTimer) {
+      clearTimeout(this.removeTimer)
+      this.removeTimer = null
+      this.el.remove()
+    }
   }
 }
 </script>
