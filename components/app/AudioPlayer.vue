@@ -169,6 +169,7 @@ export default {
       seekLoading: false,
       touchStartY: 0,
       touchStartTime: 0,
+      touchStartId: null,
       playerSettings: {
         useChapterTrack: false,
         useTotalTrack: true,
@@ -713,16 +714,20 @@ export default {
 
       this.touchStartY = touchPosY
       this.touchStartTime = Date.now()
+      this.touchStartId = e.changedTouches[0].identifier
+    },
+    resetTouchStart() {
+      this.touchStartTime = 0
+      this.touchStartY = 0
+      this.touchStartId = null
     },
     touchend(e) {
       if (!e.changedTouches) return
+      const endTouch = this.touchStartId === null ? null : Array.from(e.changedTouches).find((t) => t.identifier === this.touchStartId)
       const touchDuration = Date.now() - this.touchStartTime
-      const touchEndY = e.changedTouches[0].pageY
-      const touchDistanceY = touchEndY - this.touchStartY
+      const touchDistanceY = endTouch ? endTouch.pageY - this.touchStartY : 0
 
-      // reset touch start data
-      this.touchStartTime = 0
-      this.touchStartY = 0
+      this.resetTouchStart()
 
       if (this.isDraggingCursor) {
         if (this.draggingCurrentTime !== this.currentTime) {
@@ -730,8 +735,8 @@ export default {
         }
         this.isDraggingCursor = false
       } else {
-        if (touchDuration > 1200) {
-          // console.log('touch too long', touchDuration)
+        // Nav and other touches that started outside the player have no matching start
+        if (!endTouch || touchDuration > 1200) {
           return
         }
         if (this.showFullscreen) {
@@ -1005,6 +1010,7 @@ export default {
     this.$eventBus.$on('minimize-player', this.minimizePlayerEvt)
     document.body.addEventListener('touchstart', this.touchstart, { passive: false })
     document.body.addEventListener('touchend', this.touchend)
+    document.body.addEventListener('touchcancel', this.resetTouchStart)
     document.body.addEventListener('touchmove', this.touchmove)
     this.$nextTick(this.init)
   },
@@ -1026,6 +1032,7 @@ export default {
     this.$eventBus.$off('minimize-player', this.minimizePlayerEvt)
     document.body.removeEventListener('touchstart', this.touchstart)
     document.body.removeEventListener('touchend', this.touchend)
+    document.body.removeEventListener('touchcancel', this.resetTouchStart)
     document.body.removeEventListener('touchmove', this.touchmove)
 
     if (AbsAudioPlayer.removeAllListeners) {
