@@ -38,6 +38,9 @@
 </template>
 
 <script>
+const SHELVES_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000
+const SHELVES_CACHE_MAX_CHARS = 400000
+
 export default {
   props: {},
   data() {
@@ -242,24 +245,27 @@ export default {
       const serverRequest = isConnectedToServerWithInternet
         ? this.$nativeHttp.get(`/api/libraries/${this.currentLibraryId}/personalized?minified=1&include=rssfeed,numEpisodesIncomplete`, { connectTimeout: 10000 }).catch((error) => {
             console.error('[categories] Failed to fetch categories', error)
-            return []
+            return null
           })
         : null
+      const cacheKey = this.getShelvesCacheKey()
+      const cachedServerShelves = serverRequest ? this.readShelvesCache(cacheKey) : null
 
-      // Set local library items first
+      // Set local library items first, or the cached server shelves when there are any
       const localLibraryItems = await this.$db.getLocalLibraryItems()
       if (fetchToken !== this.categoriesFetchToken) return
       this.localLibraryItems = localLibraryItems
       const localCategories = this.getLocalMediaItemCategories()
-      this.shelves = localCategories
+      this.shelves = cachedServerShelves ? this.buildServerShelves(cachedServerShelves, localCategories) : localCategories
       console.log('[categories] Local shelves set', this.shelves.length, this.lastLocalFetch)
 
       if (serverRequest) {
         const categories = await serverRequest
         if (fetchToken !== this.categoriesFetchToken) return
-        if (!categories.length) {
-          // Failed to load categories so use local shelves
-          console.warn(`[categories] Failed to get server categories so using local categories`)
+        if (!Array.isArray(categories)) {
+          // Failed to load categories so show cached server shelves with local ones, and keep the cache for the next start
+          console.warn(`[categories] Failed to get server categories so using cached or local categories`)
+          this.shelves = cachedServerShelves ? this.buildServerShelves(cachedServerShelves, localCategories) : localCategories
           this.lastServerFetch = 0
           this.lastLocalFetch = Date.now()
           this.isLoading = false
@@ -267,29 +273,55 @@ export default {
           return
         }
 
-        this.shelves = categories.map((cat) => {
-          if (cat.type == 'book' || cat.type == 'podcast' || cat.type == 'episode') {
-            // Map localLibraryItem to entities
-            cat.entities = cat.entities.map((entity) => {
-              const localLibraryItem = this.localLibraryItems.find((lli) => {
-                return lli.libraryItemId == entity.id
-              })
-              if (localLibraryItem) {
-                entity.localLibraryItem = localLibraryItem
-              }
-              return entity
-            })
-          }
-          return cat
-        })
-
-        // Only add the local shelf with the same media type
-        const localShelves = localCategories.filter((cat) => cat.type === this.currentLibraryMediaType && !cat.localOnly)
-        this.shelves.push(...localShelves)
+        // Serialize before enrichment so the cache holds only server data; an empty list replaces older cached shelves
+        this.writeShelvesCache(cacheKey, JSON.stringify({ savedAt: Date.now(), shelves: categories }))
+        this.shelves = this.buildServerShelves(categories, localCategories)
         console.log('[categories] Server shelves set', this.shelves.length, this.lastServerFetch)
       }
 
       this.isLoading = false
+    },
+    getShelvesCacheKey() {
+      const serverHost = this.$store.getters['user/getServerAddress'] || 'unknown-server'
+      return `abs_mobile_home_shelves_v2:${serverHost}:${this.user?.id || 'anon'}:${this.currentLibraryId}`
+    },
+    readShelvesCache(key) {
+      try {
+        const cached = JSON.parse(localStorage.getItem(key))
+        if (!Array.isArray(cached?.shelves) || !cached.shelves.length) return null
+        if (Date.now() - cached.savedAt > SHELVES_CACHE_MAX_AGE_MS) return null
+        return cached.shelves
+      } catch (error) {
+        return null
+      }
+    },
+    writeShelvesCache(key, value) {
+      if (value.length > SHELVES_CACHE_MAX_CHARS) return
+      try {
+        localStorage.setItem(key, value)
+      } catch (error) {
+        console.error('[categories] Failed to save shelves cache', error)
+      }
+    },
+    buildServerShelves(serverShelves, localCategories) {
+      serverShelves.forEach((cat) => {
+        if (cat.type == 'book' || cat.type == 'podcast' || cat.type == 'episode') {
+          // Map localLibraryItem to entities
+          cat.entities = cat.entities.map((entity) => {
+            const localLibraryItem = this.localLibraryItems.find((lli) => {
+              return lli.libraryItemId == entity.id
+            })
+            if (localLibraryItem) {
+              entity.localLibraryItem = localLibraryItem
+            }
+            return entity
+          })
+        }
+      })
+
+      // Only add the local shelf with the same media type
+      const localShelves = localCategories.filter((cat) => cat.type === this.currentLibraryMediaType && !cat.localOnly)
+      return [...serverShelves, ...localShelves]
     },
     libraryChanged() {
       if (this.currentLibraryId) {
