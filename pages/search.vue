@@ -232,12 +232,11 @@ export default {
           searchForNewBook: true,
           remoteBook: result.remoteBook
         })
-        // The server, user or library changed while the request was in flight
-        if (identity !== this.requestIdentity) return
+        // The identity changed while in flight, so settle the originating key without a toast.
+        // Leaving it as 'submitting' would spin and block retries when that library is reselected.
         this.$set(this.requestState, key, 'submitted')
-        this.$toast.success(this.$strings.ToastBookRequestSubmitted)
+        if (identity === this.requestIdentity) this.$toast.success(this.$strings.ToastBookRequestSubmitted)
       } catch (error) {
-        if (identity !== this.requestIdentity) return
         const code = error?.status === 409 ? error.data?.code : null
         if (code === 'ALREADY_IN_LIBRARY') {
           this.$set(this.requestState, key, 'in_library')
@@ -245,7 +244,8 @@ export default {
           this.$set(this.requestState, key, 'tracked')
         } else {
           this.$delete(this.requestState, key)
-          this.$toast.error(this.$strings.ToastBookRequestFailed)
+          // A toast for another library's row would be stale, but the key is still settled above.
+          if (identity === this.requestIdentity) this.$toast.error(this.$strings.ToastBookRequestFailed)
         }
       }
     },
