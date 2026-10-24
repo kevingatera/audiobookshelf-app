@@ -118,6 +118,22 @@ class DbService {
     return AbsDatabase.updateDeviceSettings(payload)
   }
 
+  /**
+   * Asks the user where to save a settings backup (Android only)
+   * @returns {Promise<{cancelled: boolean}>}
+   */
+  exportSettingsBackup() {
+    return AbsDatabase.exportSettingsBackup()
+  }
+
+  /**
+   * Asks the user for a settings backup file, then applies its settings and adds its servers (Android only)
+   * @returns {Promise<{cancelled: boolean, serversAdded?: number, deviceData?: object}>}
+   */
+  importSettingsBackup() {
+    return AbsDatabase.importSettingsBackup()
+  }
+
   getMediaItemHistory(mediaId) {
     return AbsDatabase.getMediaItemHistory({ mediaId })
   }

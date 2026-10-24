@@ -1,5 +1,8 @@
 package com.audiobookshelf.app.plugins
 
+import android.app.Activity
+import android.content.Intent
+import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -9,11 +12,16 @@ import com.audiobookshelf.app.device.DeviceManager
 import com.audiobookshelf.app.media.MediaEventManager
 import com.audiobookshelf.app.server.ApiHandler
 import com.audiobookshelf.app.managers.SecureStorage
+import androidx.activity.result.ActivityResult
 import com.fasterxml.jackson.core.json.JsonReadFeature
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.getcapacitor.*
+import com.getcapacitor.annotation.ActivityCallback
 import com.getcapacitor.annotation.CapacitorPlugin
+import java.io.ByteArrayOutputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -31,6 +39,15 @@ class AbsDatabase : Plugin() {
   data class LocalLibraryItemsPayload(val value:List<LocalLibraryItem>)
   data class LocalFoldersPayload(val value:List<LocalFolder>)
   data class ServerConnConfigPayload(val id:String?, val index:Int, val name:String?, val userId:String, val username:String, var version:String, val token:String, val refreshToken:String?, val address:String?, val customHeaders:Map<String,String>?)
+  // Tokens and custom headers are left out because they can carry credentials
+  data class SettingsBackupServer(val address:String, val username:String, val userId:String)
+  data class SettingsBackup(val app:String, val schemaVersion:Int, val exportedAt:Long, val deviceSettings:DeviceSettings?, val servers:List<SettingsBackupServer>)
+
+  private val settingsBackupApp = "audiobookshelf-app-settings"
+  private val settingsBackupMaxBytes = 1024 * 1024
+  // Keep in sync with languageCodeMap in plugins/i18n.js
+  private val settingsBackupLanguages = setOf("ar", "be", "bg", "bn", "ca", "cs", "da", "de", "en-us", "es", "fi", "fr", "he", "hr", "it", "lt", "hu", "ko", "nl", "no", "pl", "pt-br", "ru", "sk", "sl", "sv", "tr", "uk", "vi-vn", "zh-cn")
+  private val settingsBackupTime = Regex("([01]\\d|2[0-3]):[0-5]\\d")
 
   override fun load() {
     mainActivity = (activity as MainActivity)
@@ -572,6 +589,188 @@ class AbsDatabase : Plugin() {
 
       call.resolve(JSObject(jacksonMapper.writeValueAsString(DeviceManager.deviceData)))
     }
+  }
+
+  @PluginMethod
+  fun exportSettingsBackup(call:PluginCall) {
+    val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+      addCategory(Intent.CATEGORY_OPENABLE)
+      type = "application/json"
+      putExtra(Intent.EXTRA_TITLE, "audiobookshelf-settings-backup.json")
+    }
+    startActivityForResult(call, intent, "exportSettingsBackupResult")
+  }
+
+  @ActivityCallback
+  private fun exportSettingsBackupResult(call:PluginCall?, result:ActivityResult) {
+    if (call == null) return
+    val uri = result.data?.data
+    if (result.resultCode != Activity.RESULT_OK || uri == null) {
+      call.resolve(JSObject().put("cancelled", true))
+      return
+    }
+
+    GlobalScope.launch(Dispatchers.IO) {
+      try {
+        val backup = SettingsBackup(
+          app = settingsBackupApp,
+          schemaVersion = 1,
+          exportedAt = System.currentTimeMillis(),
+          deviceSettings = DeviceManager.deviceData.deviceSettings,
+          servers = DeviceManager.deviceData.serverConnectionConfigs.map { SettingsBackupServer(it.address, it.username, it.userId) }
+        )
+        val json = jacksonMapper.writerWithDefaultPrettyPrinter().writeValueAsString(backup)
+        val outputStream = context.contentResolver.openOutputStream(uri) ?: throw Exception("Unable to open $uri")
+        outputStream.use { it.write(json.toByteArray(Charsets.UTF_8)) }
+        call.resolve(JSObject().put("cancelled", false))
+      } catch (e:Exception) {
+        Log.e(tag, "exportSettingsBackup failed", e)
+        call.reject("Failed to write settings backup", e)
+      }
+    }
+  }
+
+  @PluginMethod
+  fun importSettingsBackup(call:PluginCall) {
+    // Some file managers report .json files as octet-stream or plain text
+    val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+      addCategory(Intent.CATEGORY_OPENABLE)
+      type = "*/*"
+      putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("application/json", "application/octet-stream", "text/plain"))
+    }
+    startActivityForResult(call, intent, "importSettingsBackupResult")
+  }
+
+  @ActivityCallback
+  private fun importSettingsBackupResult(call:PluginCall?, result:ActivityResult) {
+    if (call == null) return
+    val uri = result.data?.data
+    if (result.resultCode != Activity.RESULT_OK || uri == null) {
+      call.resolve(JSObject().put("cancelled", true))
+      return
+    }
+
+    GlobalScope.launch(Dispatchers.IO) {
+      val backup = try {
+        readTextDocument(uri)?.let { jacksonMapper.readTree(it) }
+      } catch (e:Exception) {
+        Log.e(tag, "importSettingsBackup failed to read $uri", e)
+        null
+      }
+      if (backup == null || !isValidBackupEnvelope(backup)) {
+        call.reject("Not a settings backup", "INVALID_BACKUP")
+        return@launch
+      }
+
+      // Build the new settings and server list before touching device data so a bad file changes nothing
+      val importedSettings = try {
+        mergeDeviceSettings(backup.get("deviceSettings"))
+      } catch (e:Exception) {
+        Log.e(tag, "importSettingsBackup invalid device settings", e)
+        call.reject("Not a settings backup", "INVALID_BACKUP")
+        return@launch
+      }
+      val backupServers = parseBackupServers(backup.get("servers"))
+      if (backupServers == null) {
+        call.reject("Not a settings backup", "INVALID_BACKUP")
+        return@launch
+      }
+
+      Handler(Looper.getMainLooper()).post {
+        DeviceManager.deviceData.deviceSettings = importedSettings
+        val serversAdded = addBackupServers(backupServers)
+        DeviceManager.dbManager.saveDeviceData(DeviceManager.deviceData)
+
+        if (mainActivity.isPlayerNotificationServiceInitialized()) {
+          mainActivity.foregroundService.setMediaSessionConnectorPlaybackActions()
+        }
+
+        val ret = JSObject()
+        ret.put("cancelled", false)
+        ret.put("serversAdded", serversAdded)
+        ret.put("deviceData", JSObject(jacksonMapper.writeValueAsString(DeviceManager.deviceData)))
+        call.resolve(ret)
+      }
+    }
+  }
+
+  private fun readTextDocument(uri:Uri):String? {
+    context.contentResolver.openInputStream(uri)?.use { input ->
+      val output = ByteArrayOutputStream()
+      val buffer = ByteArray(8192)
+      while (true) {
+        val read = input.read(buffer)
+        if (read < 0) break
+        output.write(buffer, 0, read)
+        if (output.size() > settingsBackupMaxBytes) return null
+      }
+      return output.toString("UTF-8")
+    }
+    return null
+  }
+
+  private fun isValidBackupEnvelope(backup:JsonNode):Boolean {
+    val version = backup.path("schemaVersion")
+    return backup.path("app").asText() == settingsBackupApp &&
+      version.isInt && version.asInt() == 1 &&
+      backup.path("deviceSettings").isObject &&
+      backup.path("servers").isArray
+  }
+
+  // Overlays imported values on the current settings, so backups from other app versions still load
+  private fun mergeDeviceSettings(imported:JsonNode?):DeviceSettings {
+    val current = DeviceManager.deviceData.deviceSettings ?: DeviceSettings.default()
+    if (imported == null || !imported.isObject) return current
+
+    val merged = jacksonMapper.valueToTree<ObjectNode>(current)
+    imported.fields().forEach { (key, value) ->
+      if (merged.has(key)) merged.set<JsonNode>(key, value)
+    }
+    val settings = jacksonMapper.treeToValue(merged, DeviceSettings::class.java)
+    validateSettings(settings)
+    return settings
+  }
+
+  // Jackson accepts any string or number for these fields, so check the values the app relies on
+  private fun validateSettings(settings:DeviceSettings) {
+    require(settingsBackupTime.matches(settings.autoSleepTimerStartTime)) { "Invalid sleep timer start time" }
+    require(settingsBackupTime.matches(settings.autoSleepTimerEndTime)) { "Invalid sleep timer end time" }
+    require(settings.languageCode in settingsBackupLanguages) { "Unsupported language" }
+    // 0 means End of chapter, which the app saves, so it must stay importable
+    require(settings.sleepTimerLength in 0L..86_400_000L) { "Invalid sleep timer length" }
+    require(settings.autoSleepTimerAutoRewindTime in 0L..3_600_000L) { "Invalid auto rewind time" }
+    require(settings.jumpBackwardsTime in 1..3600 && settings.jumpForwardTime in 1..3600) { "Invalid jump time" }
+    require(settings.androidAutoBrowseLimitForGrouping in 1..10_000) { "Invalid browse limit" }
+  }
+
+  private data class ImportedServer(val address:String, val username:String, val userId:String)
+
+  // Returns null when any entry is malformed, so a partly valid file is rejected whole
+  private fun parseBackupServers(servers:JsonNode?):List<ImportedServer>? {
+    if (servers == null || !servers.isArray) return null
+    val parsed = mutableListOf<ImportedServer>()
+    for (server in servers) {
+      if (!server.isObject) return null
+      val address = server.path("address").textValue()?.trim() ?: return null
+      val username = server.path("username").textValue()?.trim() ?: return null
+      if (username.isEmpty() || !(address.startsWith("http://") || address.startsWith("https://"))) return null
+      parsed.add(ImportedServer(address, username, server.path("userId").asText("")))
+    }
+    return parsed
+  }
+
+  private fun addBackupServers(servers:List<ImportedServer>):Int {
+    val configs = DeviceManager.deviceData.serverConnectionConfigs
+    var added = 0
+    for (server in servers) {
+      val id = DeviceManager.getBase64Id("${server.address}@${server.username}")
+      if (configs.any { it.id == id }) continue
+
+      // No token, so connecting to it opens the login form with the address and username filled in
+      configs.add(ServerConnectionConfig(id, configs.size, "${server.address} (${server.username})", server.address, null, server.userId, server.username, "", null))
+      added++
+    }
+    return added
   }
 
   @PluginMethod
