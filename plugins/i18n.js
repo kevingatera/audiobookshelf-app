@@ -110,18 +110,29 @@ function loadTranslationStrings(code) {
   })
 }
 
+let languageRequestId = 0
+
 async function loadi18n(code) {
   if (!code) return false
+  // Bump first so reselecting the current language cancels any pending change
+  const requestId = ++languageRequestId
   if (Vue.prototype.$languageCodes.current == code) {
     // already set
     return false
   }
 
   const strings = translations[code] || (await loadTranslationStrings(code))
+  // A newer language change started while this one loaded
+  if (requestId !== languageRequestId) return false
   if (!strings) {
     console.warn(`Invalid lang code ${code}`)
     return false
   }
+
+  // Resolve the date locale before committing either, so strings and dates always change together.
+  // Hand over the request id so a locale superseded during its import never commits.
+  await Vue.prototype.$setDateFnsLocale(languageCodeMap[code].dateFnsLocale, () => requestId === languageRequestId)
+  if (requestId !== languageRequestId) return false
 
   translations[code] = strings
   Vue.prototype.$languageCodes.current = code
@@ -131,7 +142,6 @@ async function loadi18n(code) {
     Vue.prototype.$strings[key] = strings[key] || translations[defaultCode][key]
   }
 
-  Vue.prototype.$setDateFnsLocale(languageCodeMap[code].dateFnsLocale)
   syncDownloadNotificationStrings()
 
   this.$eventBus.$emit('change-lang', code)
