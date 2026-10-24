@@ -728,9 +728,16 @@ export default {
       }
     },
     async setLibrary() {
-      if (!this.libraryItem.libraryId) return
-      await this.$store.dispatch('libraries/fetch', this.libraryItem.libraryId)
-      this.$localStore.setLastLibraryId(this.libraryItem.libraryId)
+      const libraryId = this.libraryItem.libraryId
+      if (!libraryId) return
+      const serverConfigId = this.$store.state.user.serverConnectionConfig?.id
+      const userId = this.$store.state.user.user?.id
+      const result = await this.$store.dispatch('libraries/fetch', libraryId)
+      // A failed or superseded fetch, a later selection, or a server or user switch must not persist this library
+      if (!result) return
+      if (this.$store.state.user.serverConnectionConfig?.id !== serverConfigId || this.$store.state.user.user?.id !== userId) return
+      if (this.$store.state.libraries.currentLibraryId !== libraryId) return
+      this.$localStore.setLastLibraryId(libraryId)
     },
     init() {
       // If library of this item is different from current library then switch libraries
