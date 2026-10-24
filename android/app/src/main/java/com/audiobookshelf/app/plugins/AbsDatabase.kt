@@ -45,6 +45,9 @@ class AbsDatabase : Plugin() {
 
   private val settingsBackupApp = "audiobookshelf-app-settings"
   private val settingsBackupMaxBytes = 1024 * 1024
+  // Keep in sync with languageCodeMap in plugins/i18n.js
+  private val settingsBackupLanguages = setOf("ar", "be", "bg", "bn", "ca", "cs", "da", "de", "en-us", "es", "fi", "fr", "he", "hr", "it", "lt", "hu", "ko", "nl", "no", "pl", "pt-br", "ru", "sk", "sl", "sv", "tr", "uk", "vi-vn", "zh-cn")
+  private val settingsBackupTime = Regex("([01]\\d|2[0-3]):[0-5]\\d")
 
   override fun load() {
     mainActivity = (activity as MainActivity)
@@ -654,12 +657,12 @@ class AbsDatabase : Plugin() {
         Log.e(tag, "importSettingsBackup failed to read $uri", e)
         null
       }
-      if (backup == null || backup.path("app").asText() != settingsBackupApp) {
+      if (backup == null || !isValidBackupEnvelope(backup)) {
         call.reject("Not a settings backup", "INVALID_BACKUP")
         return@launch
       }
 
-      // Build the new settings before touching device data so a bad file changes nothing
+      // Build the new settings and server list before touching device data so a bad file changes nothing
       val importedSettings = try {
         mergeDeviceSettings(backup.get("deviceSettings"))
       } catch (e:Exception) {
@@ -667,10 +670,15 @@ class AbsDatabase : Plugin() {
         call.reject("Not a settings backup", "INVALID_BACKUP")
         return@launch
       }
+      val backupServers = parseBackupServers(backup.get("servers"))
+      if (backupServers == null) {
+        call.reject("Not a settings backup", "INVALID_BACKUP")
+        return@launch
+      }
 
       Handler(Looper.getMainLooper()).post {
         DeviceManager.deviceData.deviceSettings = importedSettings
-        val serversAdded = addBackupServers(backup.path("servers"))
+        val serversAdded = addBackupServers(backupServers)
         DeviceManager.dbManager.saveDeviceData(DeviceManager.deviceData)
 
         if (mainActivity.isPlayerNotificationServiceInitialized()) {
@@ -701,6 +709,14 @@ class AbsDatabase : Plugin() {
     return null
   }
 
+  private fun isValidBackupEnvelope(backup:JsonNode):Boolean {
+    val version = backup.path("schemaVersion")
+    return backup.path("app").asText() == settingsBackupApp &&
+      version.isInt && version.asInt() == 1 &&
+      backup.path("deviceSettings").isObject &&
+      backup.path("servers").isArray
+  }
+
   // Overlays imported values on the current settings, so backups from other app versions still load
   private fun mergeDeviceSettings(imported:JsonNode?):DeviceSettings {
     val current = DeviceManager.deviceData.deviceSettings ?: DeviceSettings.default()
@@ -710,22 +726,47 @@ class AbsDatabase : Plugin() {
     imported.fields().forEach { (key, value) ->
       if (merged.has(key)) merged.set<JsonNode>(key, value)
     }
-    return jacksonMapper.treeToValue(merged, DeviceSettings::class.java)
+    val settings = jacksonMapper.treeToValue(merged, DeviceSettings::class.java)
+    validateSettings(settings)
+    return settings
   }
 
-  private fun addBackupServers(servers:JsonNode):Int {
+  // Jackson accepts any string or number for these fields, so check the values the app relies on
+  private fun validateSettings(settings:DeviceSettings) {
+    require(settingsBackupTime.matches(settings.autoSleepTimerStartTime)) { "Invalid sleep timer start time" }
+    require(settingsBackupTime.matches(settings.autoSleepTimerEndTime)) { "Invalid sleep timer end time" }
+    require(settings.languageCode in settingsBackupLanguages) { "Unsupported language" }
+    require(settings.sleepTimerLength in 1L..86_400_000L) { "Invalid sleep timer length" }
+    require(settings.autoSleepTimerAutoRewindTime in 0L..3_600_000L) { "Invalid auto rewind time" }
+    require(settings.jumpBackwardsTime in 1..3600 && settings.jumpForwardTime in 1..3600) { "Invalid jump time" }
+    require(settings.androidAutoBrowseLimitForGrouping in 1..10_000) { "Invalid browse limit" }
+  }
+
+  private data class ImportedServer(val address:String, val username:String, val userId:String)
+
+  // Returns null when any entry is malformed, so a partly valid file is rejected whole
+  private fun parseBackupServers(servers:JsonNode?):List<ImportedServer>? {
+    if (servers == null || !servers.isArray) return null
+    val parsed = mutableListOf<ImportedServer>()
+    for (server in servers) {
+      if (!server.isObject) return null
+      val address = server.path("address").textValue()?.trim() ?: return null
+      val username = server.path("username").textValue()?.trim() ?: return null
+      if (username.isEmpty() || !(address.startsWith("http://") || address.startsWith("https://"))) return null
+      parsed.add(ImportedServer(address, username, server.path("userId").asText("")))
+    }
+    return parsed
+  }
+
+  private fun addBackupServers(servers:List<ImportedServer>):Int {
     val configs = DeviceManager.deviceData.serverConnectionConfigs
     var added = 0
-    servers.forEach { server ->
-      val address = server.path("address").asText("").trim()
-      val username = server.path("username").asText("").trim()
-      if (username.isEmpty() || !(address.startsWith("http://") || address.startsWith("https://"))) return@forEach
-
-      val id = DeviceManager.getBase64Id("$address@$username")
-      if (configs.any { it.id == id }) return@forEach
+    for (server in servers) {
+      val id = DeviceManager.getBase64Id("${server.address}@${server.username}")
+      if (configs.any { it.id == id }) continue
 
       // No token, so connecting to it opens the login form with the address and username filled in
-      configs.add(ServerConnectionConfig(id, configs.size, "$address ($username)", address, null, server.path("userId").asText(""), username, "", null))
+      configs.add(ServerConnectionConfig(id, configs.size, "${server.address} (${server.username})", server.address, null, server.userId, server.username, "", null))
       added++
     }
     return added
