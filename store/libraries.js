@@ -33,16 +33,33 @@ export const getters = {
   }
 }
 
+// Only the newest library fetch may commit, so a slow response cannot overwrite a later selection
+let latestFetchToken = 0
+const pendingFetches = new Map()
+
 export const actions = {
-  fetch({ state, commit, dispatch, rootState }, libraryId) {
+  fetch({ commit, dispatch, rootState }, libraryId) {
     if (!rootState.user || !rootState.user.user) {
       console.error('libraries/fetch - User not set')
       return false
     }
 
-    return this.$nativeHttp
+    const userId = rootState.user.user.id
+    const serverConfigId = rootState.user.serverConnectionConfig?.id
+    const pendingKey = `${serverConfigId}|${userId}|${libraryId}`
+
+    // Reuse an in-flight request only for the same server, user and library, and only while it is the newest one
+    const pending = pendingFetches.get(pendingKey)
+    if (pending && pending.token === latestFetchToken) return pending.promise
+
+    const token = ++latestFetchToken
+    const isCurrent = () => token === latestFetchToken && rootState.user.user?.id === userId && rootState.user.serverConnectionConfig?.id === serverConfigId
+
+    const promise = this.$nativeHttp
       .get(`/api/libraries/${libraryId}?include=filterdata`)
       .then((data) => {
+        if (!isCurrent()) return false
+
         const library = data.library
         const filterData = data.filterdata
         const issues = data.issues || 0
@@ -61,6 +78,12 @@ export const actions = {
         console.error('Failed', error)
         return false
       })
+
+    pendingFetches.set(pendingKey, { token, promise })
+    promise.then(() => {
+      if (pendingFetches.get(pendingKey)?.token === token) pendingFetches.delete(pendingKey)
+    })
+    return promise
   },
   // Return true if calling load
   load({ state, commit, rootState }) {
